@@ -9,7 +9,6 @@ type User struct {
 	gorm.Model
 	Username  string
 	DiscordID string
-	Token     string
 	Avatar    string
 }
 

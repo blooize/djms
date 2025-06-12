@@ -143,7 +143,7 @@ func TestFindEventByID(t *testing.T) {
 
 func TestFindUserByID(t *testing.T) {
 	connection = InitializeDatabase()
-	user := User{Token: "foo"}
+	user := User{Username: "foo"}
 	connection.Create(&user)
 
 	foundUser, check := FindUserByID(connection, user.ID)
@@ -151,13 +151,13 @@ func TestFindUserByID(t *testing.T) {
 	if !check && foundUser.ID == 0 {
 		t.Errorf("No User Found with ID %d", user.ID)
 	} else {
-		t.Logf("Expected User with ID %d, and found: {ID: %d, Token: %s}", user.ID, foundUser.ID, foundUser.Token)
+		t.Logf("Expected User with ID %d, and found: {ID: %d, Username: %s}", user.ID, foundUser.ID, foundUser.Username)
 	}
 	connection.Delete(&foundUser)
 
 	foundUser, check = FindUserByID(connection, user.ID)
 	if foundUser.ID != 0 && check {
-		t.Errorf("Expected no User to be found with ID %d, but got: {ID: %d, Token: %s}", user.ID, foundUser.ID, foundUser.Token)
+		t.Errorf("Expected no User to be found with ID %d, but got: {ID: %d, Username: %s}", user.ID, foundUser.ID, foundUser.Username)
 	} else {
 		t.Logf("No User found with ID %d as expected", user.ID)
 	}
@@ -166,7 +166,7 @@ func TestFindUserByID(t *testing.T) {
 func TestFindClubModeratorByUserID(t *testing.T) {
 	connection = InitializeDatabase()
 
-	user := User{Token: "foo"}
+	user := User{Username: "foo"}
 	connection.Create(&user)
 
 	moderator := ClubModerator{UserID: user.ID, ClubID: 1}
