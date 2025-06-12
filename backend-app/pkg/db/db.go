@@ -7,7 +7,10 @@ import (
 
 type User struct {
 	gorm.Model
-	Token string
+	Username  string
+	DiscordID string
+	Token     string
+	Avatar    string
 }
 
 type Club struct {
@@ -23,7 +26,8 @@ type Event struct {
 
 type DJ struct {
 	gorm.Model
-	Name string
+	Name   string
+	UserID uint
 }
 
 type VrcdnLink struct {
@@ -56,18 +60,7 @@ func InitializeDatabase() *gorm.DB {
 		panic("failed to connect database")
 	}
 	// migrate the schema
-	db.AutoMigrate(&Club{}, &Event{}, &DJ{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &EventDJ{})
-
-	return db
-}
-
-func InitializeTestDatabase() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("djms_test.db"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-	// migrate the schema
-	db.AutoMigrate(&Club{}, &Event{}, &DJ{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &EventDJ{})
+	db.AutoMigrate(&User{}, &Club{}, &Event{}, &DJ{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &EventDJ{})
 
 	return db
 }
@@ -76,7 +69,20 @@ func InitializeTestDatabase() *gorm.DB {
 // note: not quite sure if collisions actually matter here since name isnt unique
 // and one person can have multiple names in practice
 // impersonation is possible, but idgaf
+func CheckUserExists(db *gorm.DB, username string, discordID string, avatar string) {
+	var user User
 
+	db.First(&user, "discord_id = ?", discordID)
+
+	if user.ID == 0 {
+		user = User{Username: username, DiscordID: discordID, Avatar: avatar}
+		db.Create(&user)
+	} else {
+		user.Username = username
+		user.Avatar = avatar
+		db.Save(&user)
+	}
+}
 func FindDJByName(db *gorm.DB, name string) DJ {
 	var dj DJ
 	db.First(&dj, "name = ?", name)
@@ -167,14 +173,14 @@ func FindClubModeratorByUserID(db *gorm.DB, id uint) (ClubModerator, bool) {
 	}
 }
 
-func FindEventDJByEventID(db *gorm.DB, id uint) (EventDJ, bool) {
-	var eventDJ EventDJ
-	db.First(&eventDJ, "event_id = ?", id)
+func FindEventDJsByEventID(db *gorm.DB, id uint) ([]EventDJ, bool) {
+	var eventDJs []EventDJ
+	db.Find(&eventDJs, "event_id = ?", id)
 
-	if eventDJ.ID == 0 {
-		return eventDJ, false
+	if len(eventDJs) == 0 {
+		return eventDJs, false
 	} else {
-		return eventDJ, true
+		return eventDJs, true
 	}
 }
 
