@@ -8,6 +8,7 @@ import (
 	"main/pkg/db"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/ravener/discord-oauth2"
 	"golang.org/x/oauth2"
 )
@@ -20,7 +21,7 @@ type DiscordRequestBody struct {
 	RedirectURI  string `json:"redirect_uri"`
 }
 
-func SetupRouter(client_id string, client_secret string, redirect_uri string) *gin.Engine {
+func SetupRouter(client_id string, client_secret string, redirect_uri string, jwt_secret string) *gin.Engine {
 	r := gin.Default()
 	conf := &oauth2.Config{
 		Endpoint:     discord.Endpoint,
@@ -62,9 +63,9 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string) *g
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
 			return
 		}
-		ctx.Data(200, "application/json", body)
+		// ctx.Data(200, "application/json", body)
 
-		var userData map[string]interface{}
+		var userData map[string]any
 
 		err = json.Unmarshal(body, &userData)
 
@@ -80,7 +81,18 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string) *g
 
 		connection := db.InitializeDatabase()
 		db.CheckUserExists(connection, username, discordID, avatar)
+		t := jwt.New(jwt.SigningMethodHS256)
+		s, err := t.SignedString([]byte(jwt_secret))
 
+		if err != nil {
+			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
+			log.Fatalf("Error signing JWT: %v", err)
+			return
+		}
+
+		ctx.SetCookie("jwt", s, 3600, "/", "localhost", false, true)
+		ctx.Redirect(302, "http://localhost:3000/")
+		// theres more to do here with authentication/authorization but i want to do less annoying stuff now
 	})
 
 	return r
