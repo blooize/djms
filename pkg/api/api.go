@@ -107,12 +107,40 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	r.GET("/api/clubs", func(ctx *gin.Context) {
-		clubs, err := db.FindClubsOwnedByUserID(db.InitializeDatabase(), 1) // TODO: get user ID from JWT
+		clubs, err := db.FindClubsOwnedByUserID(db.InitializeDatabase(), ctx.MustGet("userID").(string)) //i believe .MustGet essentially forces authorization
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
 			return
 		}
 		ctx.JSON(200, clubs)
+	})
+
+	r.GET("/api/club/:id", func(ctx *gin.Context) {
+		id := ctx.Param("id")
+		club, found := db.FindClubByID(db.InitializeDatabase(), id)
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Club not found"})
+			return
+		}
+		ctx.JSON(200, club)
+	})
+
+	// creates the club and also adds the user as the owner
+	r.POST("/api/club/add", func(ctx *gin.Context) {
+		var foo db.Club
+		connection := db.InitializeDatabase()
+
+		if err := ctx.ShouldBindJSON(&foo); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		club := db.CreateClub(connection, db.Club{Name: foo.Name})
+		user := db.FindUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		db.CreateClubOwner(connection, club.ID, user.ID)
+
+		ctx.JSON(201, club)
 	})
 
 	return r

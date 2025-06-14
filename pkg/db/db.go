@@ -140,13 +140,24 @@ func FindClubByUserID(db *gorm.DB, id uint) (Club, bool) {
 	}
 }
 
-// please tell me theres a better way to do this
-func FindClubsOwnedByUserID(db *gorm.DB, userID uint) ([]Club, error) {
+// please tell me theres a better way to do this, UPDATE:  yea, because this does not f-ing work
+func FindClubsOwnedByUserID(db *gorm.DB, userID string) ([]Club, error) {
 	var clubs []Club
 	err := db.Joins("JOIN club_owners ON club_owners.club_id = clubs.id").
 		Where("club_owners.user_id = ?", userID).
 		Find(&clubs).Error
 	return clubs, err
+}
+
+func FindClubByID(db *gorm.DB, id string) (Club, bool) {
+	var club Club
+	db.First(&club, "id = ?", id)
+
+	if club.ID == 0 {
+		return club, false
+	} else {
+		return club, true
+	}
 }
 
 func FindEventByID(db *gorm.DB, id uint) (Event, bool) {
@@ -175,6 +186,17 @@ func FindUserByID(db *gorm.DB, id uint) (User, bool) {
 	} else {
 		return user, true
 	}
+}
+
+func FindUserByDiscordID(db *gorm.DB, discordID string) User {
+	var user User
+	db.First(&user, "discord_id = ?", discordID)
+
+	if user.ID == 0 {
+		user = User{DiscordID: discordID}
+		db.Create(&user)
+	}
+	return user
 }
 
 func FindClubModeratorByUserID(db *gorm.DB, id uint) (ClubModerator, bool) {
@@ -210,8 +232,7 @@ func FindEventDJByDJID(db *gorm.DB, id uint) (EventDJ, bool) {
 	}
 }
 
-func CreateClub(db *gorm.DB, name string) Club {
-	club := Club{Name: name}
+func CreateClub(db *gorm.DB, club Club) Club {
 	db.Create(&club)
 	return club
 }

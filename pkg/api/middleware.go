@@ -13,6 +13,7 @@ func AuthMiddleware(jwt_secret string) gin.HandlerFunc {
 		tokenString, err := c.Cookie("jwt")
 		if err != nil || tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			log.Printf("Unauthorized access: %v", err)
 			c.Abort()
 			return
 		}
