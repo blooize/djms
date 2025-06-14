@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"main/pkg/db"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -141,6 +142,43 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		db.CreateClubOwner(connection, club.ID, user.ID)
 
 		ctx.JSON(201, club)
+	})
+
+	r.POST("/api/club/:club_id/event", func(ctx *gin.Context) {
+		var foo db.Event
+		connection := db.InitializeDatabase()
+
+		if err := ctx.ShouldBindJSON(&foo); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		clubID := ctx.Param("club_id")
+		club, found := db.FindClubByID(connection, clubID)
+
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Club not found"})
+			return
+		}
+
+		event := db.CreateEvent(connection, foo.Name, club.ID)
+		ctx.JSON(201, event)
+	})
+	r.POST("/api/dj", func(ctx *gin.Context) {
+		var foo db.DJ
+		connection := db.InitializeDatabase()
+
+		if err := ctx.ShouldBindJSON(&foo); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+		user_id := ctx.MustGet("userID").(string)
+		userID, _ := strconv.ParseUint(user_id, 10, 64)
+
+		dj := db.CreateDJ(connection, foo.Name, uint(userID))
+		ctx.JSON(201, dj)
 	})
 
 	return r
