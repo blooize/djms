@@ -82,6 +82,7 @@ func CheckUserExists(db *gorm.DB, username string, discordID string, avatar stri
 		db.Save(&user)
 	}
 }
+
 func FindDJByName(db *gorm.DB, name string) DJ {
 	var dj DJ
 	db.First(&dj, "name = ?", name)
@@ -128,15 +129,24 @@ func FindVrcdnByLink(db *gorm.DB, rtspt string, dj DJ) VrcdnLink {
 	return vrcdn
 }
 
-func FindClubByID(db *gorm.DB, id uint) (Club, bool) {
+func FindClubByUserID(db *gorm.DB, id uint) (Club, bool) {
 	var club Club
-	db.First(&club, id)
+	db.First(&club, "user_id = ?", id)
 
 	if club.ID == 0 {
 		return club, false
 	} else {
 		return club, true
 	}
+}
+
+// please tell me theres a better way to do this
+func FindClubsOwnedByUserID(db *gorm.DB, userID uint) ([]Club, error) {
+	var clubs []Club
+	err := db.Joins("JOIN club_owners ON club_owners.club_id = clubs.id").
+		Where("club_owners.user_id = ?", userID).
+		Find(&clubs).Error
+	return clubs, err
 }
 
 func FindEventByID(db *gorm.DB, id uint) (Event, bool) {
@@ -148,6 +158,12 @@ func FindEventByID(db *gorm.DB, id uint) (Event, bool) {
 	} else {
 		return event, true
 	}
+}
+
+func FindEventsByClubID(db *gorm.DB, id uint) []Event {
+	var events []Event
+	db.Find(&events, "club_id = ?", id)
+	return events
 }
 
 func FindUserByID(db *gorm.DB, id uint) (User, bool) {
@@ -192,4 +208,40 @@ func FindEventDJByDJID(db *gorm.DB, id uint) (EventDJ, bool) {
 	} else {
 		return eventDJ, true
 	}
+}
+
+func CreateClub(db *gorm.DB, name string) Club {
+	club := Club{Name: name}
+	db.Create(&club)
+	return club
+}
+
+func CreateEvent(db *gorm.DB, name string, clubID uint) Event {
+	event := Event{Name: name, ClubID: clubID}
+	db.Create(&event)
+	return event
+}
+
+func CreateDJ(db *gorm.DB, name string, userID uint) DJ {
+	dj := DJ{Name: name, UserID: userID}
+	db.Create(&dj)
+	return dj
+}
+
+func CreateEventDJ(db *gorm.DB, eventID uint, djID uint) EventDJ {
+	eventDJ := EventDJ{EventID: eventID, DJID: djID}
+	db.Create(&eventDJ)
+	return eventDJ
+}
+
+func CreateClubOwner(db *gorm.DB, clubID uint, userID uint) ClubOwner {
+	owner := ClubOwner{ClubID: clubID, UserID: userID}
+	db.Create(&owner)
+	return owner
+}
+
+func CreateClubModerator(db *gorm.DB, clubID uint, userID uint) ClubModerator {
+	moderator := ClubModerator{ClubID: clubID, UserID: userID}
+	db.Create(&moderator)
+	return moderator
 }
