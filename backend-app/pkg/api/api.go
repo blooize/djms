@@ -108,7 +108,12 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	r.GET("/api/clubs", func(ctx *gin.Context) {
-		clubs, err := db.FindClubsOwnedByUserID(db.InitializeDatabase(), ctx.MustGet("userID").(string)) //i believe .MustGet essentially forces authorization
+		connection := db.InitializeDatabase()
+
+		user_id := ctx.MustGet("userID").(string)
+		userID := db.FindUserByDiscordID(connection, user_id)
+
+		clubs, err := db.FindClubsOwnedByUserID(connection, strconv.Itoa(int(userID.ID))) //i believe .MustGet essentially forces authorization
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
 			return
@@ -174,12 +179,38 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			log.Printf("Error binding JSON: %v", err)
 			return
 		}
-		user_id := ctx.MustGet("userID").(string)
-		userID, _ := strconv.ParseUint(user_id, 10, 64)
-
-		dj := db.CreateDJ(connection, foo.Name, uint(userID))
+		dj := db.CreateDJ(connection, foo.Name)
 		ctx.JSON(201, dj)
 	})
 
+	r.POST("/api/event/:event_id/slot", func(ctx *gin.Context) {
+		var data db.Slot
+		connection := db.InitializeDatabase()
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+		eventID := ctx.Param("event_id")
+		event, found := db.FindEventByID(connection, eventID)
+
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+
+		slot, exists := db.CheckIfSlotExists(connection, event.ID, data.Date)
+		if !exists {
+			slot = db.CreateSlot(connection, event.ID, data.DJID, data.Date)
+			ctx.JSON(201, slot)
+		} else {
+			slot.DJID = data.DJID
+			slot.Date = data.Date
+			slot = db.UpdateSlot(connection, slot)
+			ctx.JSON(202, slot)
+		}
+
+	})
 	return r
 }
