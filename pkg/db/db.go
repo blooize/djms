@@ -25,8 +25,7 @@ type Event struct {
 
 type DJ struct {
 	gorm.Model
-	Name   string
-	UserID uint
+	Name string
 }
 
 type VrcdnLink struct {
@@ -47,10 +46,11 @@ type ClubOwner struct {
 	UserID uint
 }
 
-type EventDJ struct {
+type Slot struct {
 	gorm.Model
 	EventID uint
 	DJID    uint
+	Date    uint64 // using uint64 to store time.Time as Unix timestamp, idk why go doesnt allow me idk
 }
 
 func InitializeDatabase() *gorm.DB {
@@ -59,7 +59,7 @@ func InitializeDatabase() *gorm.DB {
 		panic("failed to connect database")
 	}
 	// migrate the schema
-	db.AutoMigrate(&User{}, &Club{}, &Event{}, &DJ{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &EventDJ{})
+	db.AutoMigrate(&User{}, &Club{}, &Event{}, &DJ{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &Slot{})
 
 	return db
 }
@@ -87,10 +87,6 @@ func FindDJByName(db *gorm.DB, name string) DJ {
 	var dj DJ
 	db.First(&dj, "name = ?", name)
 
-	if dj.ID == 0 {
-		dj = DJ{Name: name}
-		db.Create(&dj)
-	}
 	return dj
 }
 
@@ -160,9 +156,9 @@ func FindClubByID(db *gorm.DB, id string) (Club, bool) {
 	}
 }
 
-func FindEventByID(db *gorm.DB, id uint) (Event, bool) {
+func FindEventByID(db *gorm.DB, id string) (Event, bool) {
 	var event Event
-	db.First(&event, id)
+	db.First(&event, "id = ?", id)
 
 	if event.ID == 0 {
 		return event, false
@@ -210,25 +206,14 @@ func FindClubModeratorByUserID(db *gorm.DB, id uint) (ClubModerator, bool) {
 	}
 }
 
-func FindEventDJsByEventID(db *gorm.DB, id uint) ([]EventDJ, bool) {
-	var eventDJs []EventDJ
-	db.Find(&eventDJs, "event_id = ?", id)
+func CheckIfSlotExists(db *gorm.DB, event_id uint, date uint64) (Slot, bool) {
+	var slot Slot
+	db.First(&slot, "event_id = ? AND date = ?", event_id, date)
 
-	if len(eventDJs) == 0 {
-		return eventDJs, false
+	if slot.ID == 0 {
+		return slot, false
 	} else {
-		return eventDJs, true
-	}
-}
-
-func FindEventDJByDJID(db *gorm.DB, id uint) (EventDJ, bool) {
-	var eventDJ EventDJ
-	db.First(&eventDJ, "dj_id = ?", id)
-
-	if eventDJ.ID == 0 {
-		return eventDJ, false
-	} else {
-		return eventDJ, true
+		return slot, true
 	}
 }
 
@@ -243,18 +228,11 @@ func CreateEvent(db *gorm.DB, name string, clubID uint) Event {
 	return event
 }
 
-func CreateDJ(db *gorm.DB, name string, userID uint) DJ {
-	dj := DJ{Name: name, UserID: userID}
+func CreateDJ(db *gorm.DB, name string) DJ {
+	dj := DJ{Name: name}
 	db.Create(&dj)
 	return dj
 }
-
-func CreateEventDJ(db *gorm.DB, eventID uint, djID uint) EventDJ {
-	eventDJ := EventDJ{EventID: eventID, DJID: djID}
-	db.Create(&eventDJ)
-	return eventDJ
-}
-
 func CreateClubOwner(db *gorm.DB, clubID uint, userID uint) ClubOwner {
 	owner := ClubOwner{ClubID: clubID, UserID: userID}
 	db.Create(&owner)
@@ -265,4 +243,15 @@ func CreateClubModerator(db *gorm.DB, clubID uint, userID uint) ClubModerator {
 	moderator := ClubModerator{ClubID: clubID, UserID: userID}
 	db.Create(&moderator)
 	return moderator
+}
+
+func CreateSlot(db *gorm.DB, eventID uint, djID uint, date uint64) Slot {
+	slot := Slot{EventID: eventID, DJID: djID, Date: date}
+	db.Create(&slot)
+	return slot
+}
+
+func UpdateSlot(db *gorm.DB, slot Slot) Slot {
+	db.Save(&slot)
+	return slot
 }
