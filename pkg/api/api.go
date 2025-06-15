@@ -111,7 +111,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		connection := db.InitializeDatabase()
 
 		user_id := ctx.MustGet("userID").(string)
-		userID := db.FindUserByDiscordID(connection, user_id)
+		userID := db.GetUserByDiscordID(connection, user_id)
 
 		clubs, err := db.FindClubsOwnedByUserID(connection, strconv.Itoa(int(userID.ID))) //i believe .MustGet essentially forces authorization
 		if err != nil {
@@ -123,12 +123,21 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	r.GET("/api/club/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
-		club, found := db.FindClubByID(db.InitializeDatabase(), id)
+		club, found := db.GetClub(db.InitializeDatabase(), id)
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Club not found"})
 			return
 		}
 		ctx.JSON(200, club)
+	})
+
+	r.GET("/api/:event_id/djslots", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+
+		eventID := ctx.Param("event_id")
+		slots := db.GetSlotsByEventID(connection, eventID)
+
+		ctx.JSON(200, slots)
 	})
 
 	// creates the club and also adds the user as the owner
@@ -143,7 +152,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		club := db.CreateClub(connection, db.Club{Name: foo.Name})
-		user := db.FindUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
 		db.CreateClubOwner(connection, club.ID, user.ID)
 
 		ctx.JSON(201, club)
@@ -160,7 +169,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		clubID := ctx.Param("club_id")
-		club, found := db.FindClubByID(connection, clubID)
+		club, found := db.GetClub(connection, clubID)
 
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Club not found"})
@@ -193,7 +202,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 		eventID := ctx.Param("event_id")
-		event, found := db.FindEventByID(connection, eventID)
+		event, found := db.GetEvent(connection, eventID)
 
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Event not found"})
@@ -212,5 +221,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 	})
+
 	return r
 }

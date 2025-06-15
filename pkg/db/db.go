@@ -53,6 +53,18 @@ type Slot struct {
 	Date    uint64 // using uint64 to store time.Time as Unix timestamp, idk why go doesnt allow me idk
 }
 
+type Dancer struct {
+	gorm.Model
+	Name string
+}
+
+type DancerSlot struct {
+	gorm.Model
+	EventID  uint
+	DancerID uint
+	Date     uint64 // same as with slot
+}
+
 func InitializeDatabase() *gorm.DB {
 	db, err := gorm.Open(sqlite.Open("djms.db"), &gorm.Config{})
 	if err != nil {
@@ -145,7 +157,7 @@ func FindClubsOwnedByUserID(db *gorm.DB, userID string) ([]Club, error) {
 	return clubs, err
 }
 
-func FindClubByID(db *gorm.DB, id string) (Club, bool) {
+func GetClub(db *gorm.DB, id string) (Club, bool) {
 	var club Club
 	db.First(&club, "id = ?", id)
 
@@ -156,7 +168,7 @@ func FindClubByID(db *gorm.DB, id string) (Club, bool) {
 	}
 }
 
-func FindEventByID(db *gorm.DB, id string) (Event, bool) {
+func GetEvent(db *gorm.DB, id string) (Event, bool) {
 	var event Event
 	db.First(&event, "id = ?", id)
 
@@ -167,13 +179,13 @@ func FindEventByID(db *gorm.DB, id string) (Event, bool) {
 	}
 }
 
-func FindEventsByClubID(db *gorm.DB, id uint) []Event {
+func GetEventsByClubID(db *gorm.DB, id uint) []Event {
 	var events []Event
 	db.Find(&events, "club_id = ?", id)
 	return events
 }
 
-func FindUserByID(db *gorm.DB, id uint) (User, bool) {
+func GetUser(db *gorm.DB, id uint) (User, bool) {
 	var user User
 	db.First(&user, id)
 
@@ -184,7 +196,7 @@ func FindUserByID(db *gorm.DB, id uint) (User, bool) {
 	}
 }
 
-func FindUserByDiscordID(db *gorm.DB, discordID string) User {
+func GetUserByDiscordID(db *gorm.DB, discordID string) User {
 	var user User
 	db.First(&user, "discord_id = ?", discordID)
 
@@ -195,7 +207,7 @@ func FindUserByDiscordID(db *gorm.DB, discordID string) User {
 	return user
 }
 
-func FindClubModeratorByUserID(db *gorm.DB, id uint) (ClubModerator, bool) {
+func GetClubModeratorByUserID(db *gorm.DB, id uint) (ClubModerator, bool) {
 	var moderator ClubModerator
 	db.First(&moderator, "user_id = ?", id)
 
@@ -215,6 +227,12 @@ func CheckIfSlotExists(db *gorm.DB, event_id uint, date uint64) (Slot, bool) {
 	} else {
 		return slot, true
 	}
+}
+
+func GetSlotsByEventID(db *gorm.DB, eventID string) []Slot {
+	var slots []Slot
+	db.Find(&slots, "event_id = ?", eventID)
+	return slots
 }
 
 func CreateClub(db *gorm.DB, club Club) Club {
