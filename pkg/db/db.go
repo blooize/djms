@@ -71,7 +71,7 @@ func InitializeDatabase() *gorm.DB {
 		panic("failed to connect database")
 	}
 	// migrate the schema
-	db.AutoMigrate(&User{}, &Club{}, &Event{}, &DJ{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &Slot{})
+	db.AutoMigrate(&User{}, &Club{}, &Event{}, &DJ{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &Slot{}, &Dancer{}, &DancerSlot{})
 
 	return db
 }
@@ -126,7 +126,7 @@ func FindVrcdnByDJID(db *gorm.DB, id uint) (VrcdnLink, bool) {
 // if link cant be found for given link and DJ ID, create a new link with the given DJ
 // note: 1:n relationship between one DJ and multiple links (i think thats how it worked???)
 
-func FindVrcdnByLink(db *gorm.DB, rtspt string, dj DJ) VrcdnLink {
+func GetVrcdnByLink(db *gorm.DB, rtspt string, dj DJ) VrcdnLink {
 	var vrcdn VrcdnLink
 	db.First(&vrcdn, "RTSPT = ?", rtspt, "DJID = ?", dj.ID)
 
@@ -137,7 +137,7 @@ func FindVrcdnByLink(db *gorm.DB, rtspt string, dj DJ) VrcdnLink {
 	return vrcdn
 }
 
-func FindClubByUserID(db *gorm.DB, id uint) (Club, bool) {
+func GetClubByUserID(db *gorm.DB, id uint) (Club, bool) {
 	var club Club
 	db.First(&club, "user_id = ?", id)
 
@@ -149,7 +149,7 @@ func FindClubByUserID(db *gorm.DB, id uint) (Club, bool) {
 }
 
 // please tell me theres a better way to do this, UPDATE:  yea, because this does not f-ing work
-func FindClubsOwnedByUserID(db *gorm.DB, userID string) ([]Club, error) {
+func GetClubsOwnedByUserID(db *gorm.DB, userID string) ([]Club, error) {
 	var clubs []Club
 	err := db.Joins("JOIN club_owners ON club_owners.club_id = clubs.id").
 		Where("club_owners.user_id = ?", userID).
@@ -218,7 +218,7 @@ func GetClubModeratorByUserID(db *gorm.DB, id uint) (ClubModerator, bool) {
 	}
 }
 
-func CheckIfSlotExists(db *gorm.DB, event_id uint, date uint64) (Slot, bool) {
+func GetSlot(db *gorm.DB, event_id uint, date uint64) (Slot, bool) {
 	var slot Slot
 	db.First(&slot, "event_id = ? AND date = ?", event_id, date)
 
@@ -233,6 +233,23 @@ func GetSlotsByEventID(db *gorm.DB, eventID string) []Slot {
 	var slots []Slot
 	db.Find(&slots, "event_id = ?", eventID)
 	return slots
+}
+
+func GetDancerSlotsByEventID(db *gorm.DB, eventID string) []DancerSlot {
+	var dancerSlots []DancerSlot
+	db.Find(&dancerSlots, "event_id = ?", eventID)
+	return dancerSlots
+}
+
+func GetDancerSlot(db *gorm.DB, event_id uint, date uint64) (DancerSlot, bool) {
+	var dancerSlot DancerSlot
+	db.First(&dancerSlot, "event_id = ? AND date = ?", event_id, date)
+
+	if dancerSlot.ID == 0 {
+		return dancerSlot, false
+	} else {
+		return dancerSlot, true
+	}
 }
 
 func CreateClub(db *gorm.DB, club Club) Club {
@@ -251,6 +268,13 @@ func CreateDJ(db *gorm.DB, name string) DJ {
 	db.Create(&dj)
 	return dj
 }
+
+func CreateDancer(db *gorm.DB, name string) Dancer {
+	dancer := Dancer{Name: name}
+	db.Create(&dancer)
+	return dancer
+}
+
 func CreateClubOwner(db *gorm.DB, clubID uint, userID uint) ClubOwner {
 	owner := ClubOwner{ClubID: clubID, UserID: userID}
 	db.Create(&owner)
@@ -269,7 +293,18 @@ func CreateSlot(db *gorm.DB, eventID uint, djID uint, date uint64) Slot {
 	return slot
 }
 
+func CreateDancerSlot(db *gorm.DB, eventID uint, dancerID uint, date uint64) DancerSlot {
+	dancerSlot := DancerSlot{EventID: eventID, DancerID: dancerID, Date: date}
+	db.Create(&dancerSlot)
+	return dancerSlot
+}
+
 func UpdateSlot(db *gorm.DB, slot Slot) Slot {
 	db.Save(&slot)
 	return slot
+}
+
+func UpdateDancerSlot(db *gorm.DB, dancerSlot DancerSlot) DancerSlot {
+	db.Save(&dancerSlot)
+	return dancerSlot
 }

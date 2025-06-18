@@ -113,7 +113,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		user_id := ctx.MustGet("userID").(string)
 		userID := db.GetUserByDiscordID(connection, user_id)
 
-		clubs, err := db.FindClubsOwnedByUserID(connection, strconv.Itoa(int(userID.ID))) //i believe .MustGet essentially forces authorization
+		clubs, err := db.GetClubsOwnedByUserID(connection, strconv.Itoa(int(userID.ID))) //i believe .MustGet essentially forces authorization
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
 			return
@@ -136,6 +136,14 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 		eventID := ctx.Param("event_id")
 		slots := db.GetSlotsByEventID(connection, eventID)
+
+		ctx.JSON(200, slots)
+	})
+
+	r.GET("/api/:event_id/dancerslots", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+		eventID := ctx.Param("event_id")
+		slots := db.GetDancerSlotsByEventID(connection, eventID)
 
 		ctx.JSON(200, slots)
 	})
@@ -195,6 +203,70 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	r.POST("/api/event/:event_id/slot", func(ctx *gin.Context) {
 		var data db.Slot
 		connection := db.InitializeDatabase()
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		eventID := ctx.Param("event_id")
+		event, found := db.GetEvent(connection, eventID)
+
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+
+		slot := db.CreateSlot(connection, event.ID, data.DJID, data.Date)
+		ctx.JSON(201, slot)
+	})
+
+	r.POST("/api/event/:event_id/dancerslot", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+		var data db.DancerSlot
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		eventID := ctx.Param("event_id")
+		event, found := db.GetEvent(connection, eventID)
+
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+		_, exists := db.GetDancerSlot(connection, event.ID, data.Date)
+
+		if exists {
+			ctx.JSON(500, gin.H{"error": "Slot already exists"})
+			return
+		}
+
+		slot := db.CreateDancerSlot(connection, event.ID, data.DancerID, data.Date)
+
+		ctx.JSON(201, slot)
+	})
+
+	r.POST("/api/dancer", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+		var data db.Dancer
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		dancer := db.CreateDancer(connection, data.Name)
+		ctx.JSON(201, dancer)
+	})
+
+	r.PUT("/api/event/:event_id/slot", func(ctx *gin.Context) {
+		var data db.Slot
+		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -209,17 +281,46 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		slot, exists := db.CheckIfSlotExists(connection, event.ID, data.Date)
+		slot, exists := db.GetSlot(connection, event.ID, data.Date)
 		if !exists {
-			slot = db.CreateSlot(connection, event.ID, data.DJID, data.Date)
-			ctx.JSON(201, slot)
-		} else {
-			slot.DJID = data.DJID
-			slot.Date = data.Date
-			slot = db.UpdateSlot(connection, slot)
-			ctx.JSON(202, slot)
+			ctx.JSON(404, gin.H{"error": "Slot not found"})
+			return
+
 		}
 
+		slot.DJID = data.DJID
+		slot.Date = data.Date
+		slot = db.UpdateSlot(connection, slot)
+		ctx.JSON(202, slot)
+
+	})
+
+	r.PUT("/api/event/:event_id/dancerslot", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+		var data db.DancerSlot
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+		eventID := ctx.Param("event_id")
+		event, found := db.GetEvent(connection, eventID)
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+		slot, exists := db.GetDancerSlot(connection, event.ID, data.Date)
+
+		if !exists {
+			ctx.JSON(404, gin.H{"error": "Dancer slot not found"})
+			return
+		}
+
+		slot.DancerID = data.DancerID
+		slot.Date = data.Date
+		slot = db.UpdateDancerSlot(connection, slot)
+		ctx.JSON(202, slot)
 	})
 
 	return r
