@@ -148,6 +148,17 @@ func GetClubByUserID(db *gorm.DB, id uint) (Club, bool) {
 	}
 }
 
+func CheckUserIsOwnerOfClub(db *gorm.DB, userID uint, clubID uint) bool {
+	var owner ClubOwner
+	db.First(&owner, "user_id = ? AND club_id = ?", userID, clubID)
+
+	if owner.ID == 0 {
+		return false
+	} else {
+		return true
+	}
+}
+
 // please tell me theres a better way to do this, UPDATE:  yea, because this does not f-ing work
 func GetClubsOwnedByUserID(db *gorm.DB, userID string) ([]Club, error) {
 	var clubs []Club
@@ -157,7 +168,7 @@ func GetClubsOwnedByUserID(db *gorm.DB, userID string) ([]Club, error) {
 	return clubs, err
 }
 
-func GetClub(db *gorm.DB, id string) (Club, bool) {
+func GetClub(db *gorm.DB, id uint) (Club, bool) {
 	var club Club
 	db.First(&club, "id = ?", id)
 
@@ -168,7 +179,7 @@ func GetClub(db *gorm.DB, id string) (Club, bool) {
 	}
 }
 
-func GetEvent(db *gorm.DB, id string) (Event, bool) {
+func GetEvent(db *gorm.DB, id uint) (Event, bool) {
 	var event Event
 	db.First(&event, "id = ?", id)
 
@@ -229,13 +240,13 @@ func GetSlot(db *gorm.DB, event_id uint, date uint64) (Slot, bool) {
 	}
 }
 
-func GetSlotsByEventID(db *gorm.DB, eventID string) []Slot {
+func GetSlotsByEventID(db *gorm.DB, eventID uint) []Slot {
 	var slots []Slot
 	db.Find(&slots, "event_id = ?", eventID)
 	return slots
 }
 
-func GetDancerSlotsByEventID(db *gorm.DB, eventID string) []DancerSlot {
+func GetDancerSlotsByEventID(db *gorm.DB, eventID uint) []DancerSlot {
 	var dancerSlots []DancerSlot
 	db.Find(&dancerSlots, "event_id = ?", eventID)
 	return dancerSlots
