@@ -373,5 +373,46 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(202, slot)
 	})
 
+	r.DELETE("/api/club/moderator", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+		var data db.ClubModerator
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		authorized := db.CheckUserIsOwnerOfClub(connection, data.ClubID, user.ID)
+
+		if !authorized {
+			ctx.JSON(403, gin.H{"error": "Forbidden"})
+			return
+		}
+
+		db.DeleteModerator(connection, data.ClubID, data.UserID)
+		ctx.JSON(200, gin.H{"message": "Moderator deleted"})
+	})
+
+	r.DELETE("/api/event", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+		var data db.Event
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		authorized := db.CheckUserIsOwnerOfClub(connection, data.ClubID, user.ID)
+
+		if !authorized {
+			ctx.JSON(403, gin.H{"error": "Forbidden"})
+			return
+		}
+
+		db.DeleteEvent(connection, data.ID)
+		ctx.JSON(200, gin.H{"message": "Event deleted"})
+	})
+
 	return r
 }
