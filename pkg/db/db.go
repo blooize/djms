@@ -319,3 +319,20 @@ func UpdateDancerSlot(db *gorm.DB, dancerSlot DancerSlot) DancerSlot {
 	db.Save(&dancerSlot)
 	return dancerSlot
 }
+
+func DeleteModerator(db *gorm.DB, clubID uint, userID uint) {
+	var moderator ClubModerator
+	db.First(&moderator, "club_id = ? AND user_id = ?", clubID, userID)
+	if moderator.ID != 0 {
+		db.Delete(&moderator)
+	}
+}
+
+func DeleteEvent(db *gorm.DB, eventID uint) {
+	var event Event
+	db.First(&event, eventID)
+	if event.ID != 0 {
+		db.Delete(&event)
+		// really need delete all slots, dancers, djs but cba rn
+	}
+}
