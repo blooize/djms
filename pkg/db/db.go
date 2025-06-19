@@ -105,14 +105,14 @@ func CheckUserExists(db *gorm.DB, username string, discordID string, avatar stri
 	}
 }
 
-func FindTalentByName(db *gorm.DB, name string) Talent {
+func GetTalentByName(db *gorm.DB, name string) Talent {
 	var talent Talent
 	db.First(&talent, "name = ?", name)
 
 	return talent
 }
 
-func FindTalentByID(db *gorm.DB, id uint) (Talent, bool) {
+func GetTalent(db *gorm.DB, id uint) (Talent, bool) {
 	var talent Talent
 	db.First(&talent, id)
 
@@ -256,6 +256,12 @@ func GetSlotsByEventID(db *gorm.DB, eventID uint) []Slot {
 	return slots
 }
 
+func GetSlotTalents(db *gorm.DB, slotID uint) []SlotTalent {
+	var slotTalents []SlotTalent
+	db.Find(&slotTalents, "slot_id = ?", slotID)
+	return slotTalents
+}
+
 func GetDancerSlots(db *gorm.DB, eventID uint) []DancerSlot {
 	var dancerSlots []DancerSlot
 	db.Find(&dancerSlots, "event_id = ?", eventID)
@@ -352,6 +358,12 @@ func CreateDancerSlotTalent(db *gorm.DB, dancerSlotID uint, dancerID uint) Dance
 	dancerSlotTalent := DancerSlotTalent{DancerSlotID: dancerSlotID, DancerID: dancerID}
 	db.Create(&dancerSlotTalent)
 	return dancerSlotTalent
+}
+
+func CreateTalentSlot(db *gorm.DB, slotID uint, talentID uint) SlotTalent {
+	slotTalent := SlotTalent{SlotID: slotID, TalentID: talentID}
+	db.Create(&slotTalent)
+	return slotTalent
 }
 
 func UpdateSlot(db *gorm.DB, slot Slot) Slot {
