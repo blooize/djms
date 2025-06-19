@@ -23,15 +23,15 @@ type Event struct {
 	ClubID uint
 }
 
-type DJ struct {
+type Talent struct {
 	gorm.Model
 	Name string
 }
 
 type VrcdnLink struct {
 	gorm.Model
-	RTSPT string
-	DJID  uint
+	RTSPT    string
+	TalentID uint
 }
 
 type ClubModerator struct {
@@ -49,8 +49,13 @@ type ClubOwner struct {
 type Slot struct {
 	gorm.Model
 	EventID uint
-	DJID    uint
 	Date    uint64 // using uint64 to store time.Time as Unix timestamp, idk why go doesnt allow me idk
+}
+
+type SlotTalent struct {
+	gorm.Model
+	SlotID   uint
+	TalentID uint
 }
 
 type Dancer struct {
@@ -60,9 +65,14 @@ type Dancer struct {
 
 type DancerSlot struct {
 	gorm.Model
-	EventID  uint
-	DancerID uint
-	Date     uint64 // same as with slot
+	EventID uint
+	Date    uint64
+}
+
+type DancerSlotTalent struct {
+	gorm.Model
+	DancerSlotID uint
+	DancerID     uint
 }
 
 func InitializeDatabase() *gorm.DB {
@@ -71,7 +81,7 @@ func InitializeDatabase() *gorm.DB {
 		panic("failed to connect database")
 	}
 	// migrate the schema
-	db.AutoMigrate(&User{}, &Club{}, &Event{}, &DJ{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &Slot{}, &Dancer{}, &DancerSlot{})
+	db.AutoMigrate(&User{}, &Club{}, &Event{}, &Talent{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &Slot{}, &Dancer{}, &DancerSlot{}, &SlotTalent{}, &DancerSlotTalent{})
 
 	return db
 }
@@ -95,26 +105,26 @@ func CheckUserExists(db *gorm.DB, username string, discordID string, avatar stri
 	}
 }
 
-func FindDJByName(db *gorm.DB, name string) DJ {
-	var dj DJ
-	db.First(&dj, "name = ?", name)
+func FindTalentByName(db *gorm.DB, name string) Talent {
+	var talent Talent
+	db.First(&talent, "name = ?", name)
 
-	return dj
+	return talent
 }
 
-func FindDJByID(db *gorm.DB, id uint) (DJ, bool) {
-	var dj DJ
-	db.First(&dj, id)
+func FindTalentByID(db *gorm.DB, id uint) (Talent, bool) {
+	var talent Talent
+	db.First(&talent, id)
 
-	if dj.ID == 0 {
-		return dj, false
+	if talent.ID == 0 {
+		return talent, false
 	} else {
-		return dj, true
+		return talent, true
 	}
 }
-func FindVrcdnByDJID(db *gorm.DB, id uint) (VrcdnLink, bool) {
+func FindVrcdnByTalentID(db *gorm.DB, id uint) (VrcdnLink, bool) {
 	var vrcdn VrcdnLink
-	db.First(&vrcdn, "dj_id = ?", id)
+	db.First(&vrcdn, "talent_id = ?", id)
 
 	if vrcdn.ID == 0 {
 		return vrcdn, false
@@ -126,12 +136,12 @@ func FindVrcdnByDJID(db *gorm.DB, id uint) (VrcdnLink, bool) {
 // if link cant be found for given link and DJ ID, create a new link with the given DJ
 // note: 1:n relationship between one DJ and multiple links (i think thats how it worked???)
 
-func GetVrcdnByLink(db *gorm.DB, rtspt string, dj DJ) VrcdnLink {
+func GetVrcdnByLink(db *gorm.DB, rtspt string, talent Talent) VrcdnLink {
 	var vrcdn VrcdnLink
-	db.First(&vrcdn, "RTSPT = ?", rtspt, "DJID = ?", dj.ID)
+	db.First(&vrcdn, "RTSPT = ?", rtspt, "TalentID = ?", talent.ID)
 
 	if vrcdn.ID == 0 {
-		vrcdn = VrcdnLink{RTSPT: rtspt, DJID: dj.ID}
+		vrcdn = VrcdnLink{RTSPT: rtspt, TalentID: talent.ID}
 		db.Create(&vrcdn)
 	}
 	return vrcdn
@@ -246,7 +256,7 @@ func GetSlotsByEventID(db *gorm.DB, eventID uint) []Slot {
 	return slots
 }
 
-func GetDancerSlotsByEventID(db *gorm.DB, eventID uint) []DancerSlot {
+func GetDancerSlots(db *gorm.DB, eventID uint) []DancerSlot {
 	var dancerSlots []DancerSlot
 	db.Find(&dancerSlots, "event_id = ?", eventID)
 	return dancerSlots
@@ -263,6 +273,34 @@ func GetDancerSlot(db *gorm.DB, event_id uint, date uint64) (DancerSlot, bool) {
 	}
 }
 
+func GetDancer(db *gorm.DB, id uint) (Dancer, bool) {
+	var dancer Dancer
+	db.First(&dancer, id)
+
+	if dancer.ID == 0 {
+		return dancer, false
+	} else {
+		return dancer, true
+	}
+}
+
+func GetDancerByName(db *gorm.DB, name string) (Dancer, bool) {
+	var dancer Dancer
+	db.First(&dancer, "name = ?", name)
+
+	if dancer.ID == 0 {
+		return dancer, false
+	} else {
+		return dancer, true
+	}
+}
+
+func GetDancerSlotTalents(db *gorm.DB, DancerSlotID uint) []DancerSlotTalent {
+	var dancerTalents []DancerSlotTalent
+	db.Find(&dancerTalents, "dancer_slot_id = ?", DancerSlotID)
+	return dancerTalents
+}
+
 func CreateClub(db *gorm.DB, club Club) Club {
 	db.Create(&club)
 	return club
@@ -274,10 +312,10 @@ func CreateEvent(db *gorm.DB, name string, clubID uint) Event {
 	return event
 }
 
-func CreateDJ(db *gorm.DB, name string) DJ {
-	dj := DJ{Name: name}
-	db.Create(&dj)
-	return dj
+func CreateTalent(db *gorm.DB, name string) Talent {
+	talent := Talent{Name: name}
+	db.Create(&talent)
+	return talent
 }
 
 func CreateDancer(db *gorm.DB, name string) Dancer {
@@ -298,16 +336,22 @@ func CreateClubModerator(db *gorm.DB, clubID uint, userID uint) ClubModerator {
 	return moderator
 }
 
-func CreateSlot(db *gorm.DB, eventID uint, djID uint, date uint64) Slot {
-	slot := Slot{EventID: eventID, DJID: djID, Date: date}
+func CreateSlot(db *gorm.DB, eventID uint, date uint64) Slot {
+	slot := Slot{EventID: eventID, Date: date}
 	db.Create(&slot)
 	return slot
 }
 
-func CreateDancerSlot(db *gorm.DB, eventID uint, dancerID uint, date uint64) DancerSlot {
-	dancerSlot := DancerSlot{EventID: eventID, DancerID: dancerID, Date: date}
+func CreateDancerSlot(db *gorm.DB, eventID uint, date uint64) DancerSlot {
+	dancerSlot := DancerSlot{EventID: eventID, Date: date}
 	db.Create(&dancerSlot)
 	return dancerSlot
+}
+
+func CreateDancerSlotTalent(db *gorm.DB, dancerSlotID uint, dancerID uint) DancerSlotTalent {
+	dancerSlotTalent := DancerSlotTalent{DancerSlotID: dancerSlotID, DancerID: dancerID}
+	db.Create(&dancerSlotTalent)
+	return dancerSlotTalent
 }
 
 func UpdateSlot(db *gorm.DB, slot Slot) Slot {
@@ -334,5 +378,16 @@ func DeleteEvent(db *gorm.DB, eventID uint) {
 	if event.ID != 0 {
 		db.Delete(&event)
 		// really need delete all slots, dancers, djs but cba rn
+	}
+}
+
+func DeleteDancerSlotTalents(db *gorm.DB, slot uint) {
+	var dancerSlotTalents []DancerSlotTalent
+	db.Find(&dancerSlotTalents, "dancer_slot_id = ?", slot)
+
+	if len(dancerSlotTalents) > 0 {
+		for _, dancerSlotTalent := range dancerSlotTalents {
+			db.Delete(&dancerSlotTalent)
+		}
 	}
 }

@@ -156,10 +156,80 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, slots)
 	})
 
-	r.GET("/api/dancerslots", func(ctx *gin.Context) {
+	// this fucking sucks and would be better if i just used a join but im too dumb for that right now
+	r.GET("/api/event/dancerslots", func(ctx *gin.Context) {
 		var data struct {
-			ID uint `json:"id"`
+			EventID uint `json:"event_id"`
 		}
+
+		type Dancer struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
+
+		type Slots struct {
+			Date    uint64   `json:"date"`
+			Dancers []Dancer `json:"dancers"`
+		}
+
+		var res struct {
+			ClubID      uint    `json:"club_id"`
+			EventID     uint    `json:"event_id"`
+			DancerSlots []Slots `json:"dancer_slots"`
+		}
+
+		connection := db.InitializeDatabase()
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+		event, found := db.GetEvent(connection, data.EventID)
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+		dancerslots := db.GetDancerSlots(connection, data.EventID)
+
+		for _, slot := range dancerslots {
+			slottalents := db.GetDancerSlotTalents(connection, slot.ID)
+			var dancers []Dancer
+
+			for _, talent := range slottalents {
+				dancer, found := db.GetDancer(connection, talent.DancerID)
+				if !found {
+					ctx.JSON(500, gin.H{"error": "Internal Server Error"})
+					return
+				}
+				dancers = append(dancers, Dancer{ID: dancer.ID, Name: dancer.Name})
+			}
+
+			res.DancerSlots = append(res.DancerSlots, Slots{
+				Date:    slot.Date,
+				Dancers: dancers,
+			})
+		}
+
+		res.EventID = event.ID
+		res.ClubID = event.ClubID
+
+		ctx.JSON(200, res)
+	})
+
+	r.GET("/api/club/event", func(ctx *gin.Context) {
+		var data struct {
+			EventID uint `json:"event_id"`
+		}
+
+		var res struct {
+			ID          uint            `json:"id"`
+			Name        string          `json:"name"`
+			ClubID      uint            `json:"club_id"`
+			TalentSlots []db.Slot       `json:"talent_slots"`
+			DancerSlots []db.DancerSlot `json:"dancer_slots"`
+		}
+
 		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
@@ -168,9 +238,18 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		slots := db.GetDancerSlotsByEventID(connection, data.ID)
+		event, found := db.GetEvent(connection, data.EventID)
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+		res.ID = event.ID
+		res.Name = event.Name
+		res.ClubID = event.ClubID
 
-		ctx.JSON(200, slots)
+		res.TalentSlots = db.GetSlotsByEventID(connection, event.ID)
+		res.DancerSlots = db.GetDancerSlots(connection, event.ID)
+		ctx.JSON(200, res)
 	})
 
 	// creates the club and also adds the user as the owner
@@ -211,8 +290,8 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		event := db.CreateEvent(connection, foo.Name, club.ID)
 		ctx.JSON(201, event)
 	})
-	r.POST("/api/dj", func(ctx *gin.Context) {
-		var foo db.DJ
+	r.POST("/api/talent", func(ctx *gin.Context) {
+		var foo db.Talent
 		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&foo); err != nil {
@@ -220,8 +299,8 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			log.Printf("Error binding JSON: %v", err)
 			return
 		}
-		dj := db.CreateDJ(connection, foo.Name)
-		ctx.JSON(201, dj)
+		talent := db.CreateTalent(connection, foo.Name)
+		ctx.JSON(201, talent)
 	})
 
 	r.POST("/api/event/slot", func(ctx *gin.Context) {
@@ -247,13 +326,31 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		slot := db.CreateSlot(connection, event.ID, data.DJID, data.Date)
+		slot := db.CreateSlot(connection, event.ID, data.Date)
 		ctx.JSON(201, slot)
 	})
 
 	r.POST("/api/event/dancerslot", func(ctx *gin.Context) {
+
 		connection := db.InitializeDatabase()
-		var data db.DancerSlot
+
+		var data struct {
+			EventID     uint     `json:"event_id"`
+			Date        uint64   `json:"date"`
+			DancerNames []string `json:"dancer_names"`
+		}
+
+		type Dancer struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
+
+		var res struct {
+			EventID uint     `json:"event_id"`
+			Date    uint64   `json:"date"`
+			SlotID  uint     `json:"slot_id"`
+			Dancers []Dancer `json:"dancers"`
+		}
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -262,21 +359,43 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		event, found := db.GetEvent(connection, data.EventID)
-
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Event not found"})
 			return
 		}
-		_, exists := db.GetDancerSlot(connection, event.ID, data.Date)
 
+		_, exists := db.GetDancerSlot(connection, event.ID, data.Date)
 		if exists {
 			ctx.JSON(500, gin.H{"error": "Slot already exists"})
 			return
 		}
 
-		slot := db.CreateDancerSlot(connection, event.ID, data.DancerID, data.Date)
+		slot := db.CreateDancerSlot(connection, event.ID, data.Date)
+		var dancers []Dancer
 
-		ctx.JSON(201, slot)
+		for _, dancer := range data.DancerNames {
+			dancerData, exists := db.GetDancerByName(connection, dancer)
+			if !exists {
+				dancerData = db.CreateDancer(connection, dancer)
+				if dancerData.ID == 0 {
+					ctx.JSON(500, gin.H{"error": "Internal Server Error"})
+					return
+				}
+			}
+			dancers = append(dancers, Dancer{ID: dancerData.ID, Name: dancerData.Name})
+
+			talent := db.CreateDancerSlotTalent(connection, slot.ID, dancerData.ID)
+			if talent.ID == 0 {
+				ctx.JSON(500, gin.H{"error": "Internal Server Error"})
+				return
+			}
+		}
+		res.Dancers = dancers
+		res.EventID = event.ID
+		res.Date = data.Date
+		res.SlotID = slot.ID
+
+		ctx.JSON(201, res)
 	})
 
 	r.POST("/api/dancer", func(ctx *gin.Context) {
@@ -315,39 +434,58 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(201, moderator)
 	})
 
-	r.PUT("/api/event/slot", func(ctx *gin.Context) {
-		var data db.Slot
-		connection := db.InitializeDatabase()
+	// r.PUT("/api/event/slot", func(ctx *gin.Context) {
+	// 	var data struct {
+	// 		EventID    uint   `json:"event_id"`
+	// 		Date       uint64 `json:"date"`
+	// 		TalentName string `json:"talent_name"`
+	// 	}
+	// 	connection := db.InitializeDatabase()
 
-		if err := ctx.ShouldBindJSON(&data); err != nil {
-			ctx.JSON(400, gin.H{"error": "Bad Request"})
-			log.Printf("Error binding JSON: %v", err)
-			return
-		}
-		event, found := db.GetEvent(connection, data.EventID)
+	// 	if err := ctx.ShouldBindJSON(&data); err != nil {
+	// 		ctx.JSON(400, gin.H{"error": "Bad Request"})
+	// 		log.Printf("Error binding JSON: %v", err)
+	// 		return
+	// 	}
+	// 	event, found := db.GetEvent(connection, data.EventID)
 
-		if !found {
-			ctx.JSON(404, gin.H{"error": "Event not found"})
-			return
-		}
+	// 	if !found {
+	// 		ctx.JSON(404, gin.H{"error": "Event not found"})
+	// 		return
+	// 	}
 
-		slot, exists := db.GetSlot(connection, event.ID, data.Date)
-		if !exists {
-			ctx.JSON(404, gin.H{"error": "Slot not found"})
-			return
+	// 	slot, exists := db.GetSlot(connection, event.ID, data.Date)
+	// 	if !exists {
+	// 		ctx.JSON(404, gin.H{"error": "Slot not found"})
+	// 		return
 
-		}
+	// 	}
 
-		slot.DJID = data.DJID
-		slot.Date = data.Date
-		slot = db.UpdateSlot(connection, slot)
-		ctx.JSON(202, slot)
+	// 	slot.DJID = data.DJID
+	// 	slot.Date = data.Date
+	// 	slot = db.UpdateSlot(connection, slot)
+	// 	ctx.JSON(202, slot)
 
-	})
+	// })
 
 	r.PUT("/api/event/dancerslot", func(ctx *gin.Context) {
+		type Dancer struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
+
 		connection := db.InitializeDatabase()
-		var data db.DancerSlot
+		var data struct {
+			EventID     uint     `json:"event_id"`
+			Date        uint64   `json:"date"`
+			DancerNames []string `json:"dancer_id"`
+		}
+		var res struct {
+			EventID uint     `json:"event_id"`
+			Date    uint64   `json:"date"`
+			SlotID  uint     `json:"slot_id"`
+			Dancers []Dancer `json:"dancers"`
+		}
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -367,10 +505,33 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		slot.DancerID = data.DancerID
-		slot.Date = data.Date
-		slot = db.UpdateDancerSlot(connection, slot)
-		ctx.JSON(202, slot)
+		db.DeleteDancerSlotTalents(connection, slot.ID)
+
+		var dancers []Dancer
+
+		for _, dancer := range data.DancerNames {
+			dancerData, exists := db.GetDancerByName(connection, dancer)
+			if !exists {
+				dancerData = db.CreateDancer(connection, dancer)
+				if dancerData.ID == 0 {
+					ctx.JSON(500, gin.H{"error": "Internal Server Error"})
+					return
+				}
+			}
+			dancers = append(dancers, Dancer{ID: dancerData.ID, Name: dancerData.Name})
+
+			talent := db.CreateDancerSlotTalent(connection, slot.ID, dancerData.ID)
+			if talent.ID == 0 {
+				ctx.JSON(500, gin.H{"error": "Internal Server Error"})
+				return
+			}
+		}
+		res.Dancers = dancers
+		res.EventID = event.ID
+		res.Date = data.Date
+		res.SlotID = slot.ID
+
+		ctx.JSON(202, res)
 	})
 
 	r.DELETE("/api/club/moderator", func(ctx *gin.Context) {
