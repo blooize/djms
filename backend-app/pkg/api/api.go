@@ -154,7 +154,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		club, found := db.GetClub(connection, data.ID)
+		club, found := db.GetClub(connection, data.ClubID)
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Club not found"})
 			return
