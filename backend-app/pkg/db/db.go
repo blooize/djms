@@ -390,6 +390,18 @@ func DeleteEvent(db *gorm.DB, eventID uint) {
 	if event.ID != 0 {
 		db.Delete(&event)
 		// really need delete all slots, dancers, djs but cba rn
+		var slots []Slot
+		db.Find(&slots, "event_id = ?", eventID)
+		for _, slot := range slots {
+			DeleteSlotTalents(db, slot.ID)
+			db.Delete(&slot)
+		}
+		var dancerSlots []DancerSlot
+		db.Find(&dancerSlots, "event_id = ?", eventID)
+		for _, dancerSlot := range dancerSlots {
+			DeleteDancerSlotTalents(db, dancerSlot.ID)
+			db.Delete(&dancerSlot)
+		}
 	}
 }
 
@@ -401,5 +413,60 @@ func DeleteDancerSlotTalents(db *gorm.DB, slot uint) {
 		for _, dancerSlotTalent := range dancerSlotTalents {
 			db.Delete(&dancerSlotTalent)
 		}
+	}
+}
+
+func DeleteSlotTalents(db *gorm.DB, slot uint) {
+	var slotTalents []SlotTalent
+	db.Find(&slotTalents, "slot_id = ?", slot)
+
+	if len(slotTalents) > 0 {
+		for _, slotTalent := range slotTalents {
+			db.Delete(&slotTalent)
+		}
+	}
+}
+func DeleteDancerSlot(db *gorm.DB, dancerSlotID uint) {
+	var dancerSlot DancerSlot
+	db.First(&dancerSlot, dancerSlotID)
+	if dancerSlot.ID != 0 {
+		DeleteDancerSlotTalents(db, dancerSlotID)
+		db.Delete(&dancerSlot)
+	}
+}
+
+func DeleteSlot(db *gorm.DB, slotID uint) {
+	var slot Slot
+	db.First(&slot, slotID)
+	if slot.ID != 0 {
+		DeleteSlotTalents(db, slotID)
+		db.Delete(&slot)
+	}
+}
+
+func DeleteClub(db *gorm.DB, clubID uint) {
+	var club Club
+	db.First(&club, clubID)
+	if club.ID != 0 {
+		// delete all events, slots, dancers, djs, moderators and owners
+		var events []Event
+		db.Find(&events, "club_id = ?", clubID)
+		for _, event := range events {
+			DeleteEvent(db, event.ID)
+		}
+
+		var moderators []ClubModerator
+		db.Find(&moderators, "club_id = ?", clubID)
+		for _, moderator := range moderators {
+			db.Delete(&moderator)
+		}
+
+		var owners []ClubOwner
+		db.Find(&owners, "club_id = ?", clubID)
+		for _, owner := range owners {
+			db.Delete(&owner)
+		}
+
+		db.Delete(&club)
 	}
 }

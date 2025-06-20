@@ -110,6 +110,15 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	r.GET("/api/clubs", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 
+		type Club struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
+
+		var res struct {
+			Clubs []Club `json:"clubs"`
+		}
+
 		user_id := ctx.MustGet("userID").(string)
 		userID := db.GetUserByDiscordID(connection, user_id)
 
@@ -118,11 +127,25 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
 			return
 		}
-		ctx.JSON(200, clubs)
+
+		for _, club := range clubs {
+			res.Clubs = append(res.Clubs, Club{
+				ID:   club.ID,
+				Name: club.Name,
+			})
+		}
+
+		ctx.JSON(200, res)
 	})
 
 	r.GET("/api/club", func(ctx *gin.Context) {
-		var data db.Club
+		var data struct {
+			ClubID uint `json:"club_id"`
+		}
+		var res struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
 		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
@@ -136,7 +159,10 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			ctx.JSON(404, gin.H{"error": "Club not found"})
 			return
 		}
-		ctx.JSON(200, club)
+
+		res.ID = club.ID
+		res.Name = club.Name
+		ctx.JSON(200, res)
 	})
 
 	r.GET("/api/djslots", func(ctx *gin.Context) {
@@ -339,16 +365,25 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	r.POST("/api/talent", func(ctx *gin.Context) {
-		var foo db.Talent
+		var data struct {
+			Name string `json:"name"`
+		}
+
+		var res struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
 		connection := db.InitializeDatabase()
 
-		if err := ctx.ShouldBindJSON(&foo); err != nil {
+		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
 			log.Printf("Error binding JSON: %v", err)
 			return
 		}
-		talent := db.CreateTalent(connection, foo.Name)
-		ctx.JSON(201, talent)
+		talent := db.CreateTalent(connection, data.Name)
+		res.ID = talent.ID
+		res.Name = talent.Name
+		ctx.JSON(201, res)
 
 	})
 
@@ -487,7 +522,15 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	r.POST("/api/dancer", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
-		var data db.Dancer
+
+		var data struct {
+			Name string `json:"name"`
+		}
+
+		var res struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -496,12 +539,23 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		dancer := db.CreateDancer(connection, data.Name)
-		ctx.JSON(201, dancer)
+		res.ID = dancer.ID
+		res.Name = dancer.Name
+		ctx.JSON(201, res)
 	})
 
 	r.POST("/api/club/moderator", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
-		var data db.ClubModerator
+		var data struct {
+			ClubID uint `json:"club_id"`
+			UserID uint `json:"user_id"`
+		}
+
+		var res struct {
+			ID     uint `json:"id"`
+			ClubID uint `json:"club_id"`
+			UserID uint `json:"user_id"`
+		}
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -509,8 +563,8 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
+		//auth check to be sure
 		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
-
 		authorized := db.CheckUserIsOwnerOfClub(connection, data.ClubID, user.ID)
 		if !authorized {
 			ctx.JSON(403, gin.H{"error": "Forbidden"})
@@ -518,7 +572,10 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		moderator := db.CreateClubModerator(connection, data.ClubID, data.UserID)
-		ctx.JSON(201, moderator)
+		res.ID = moderator.ID
+		res.ClubID = moderator.ClubID
+		res.UserID = moderator.UserID
+		ctx.JSON(201, res)
 	})
 
 	// r.PUT("/api/event/slot", func(ctx *gin.Context) {
@@ -623,7 +680,9 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	r.DELETE("/api/club/moderator", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
-		var data db.ClubModerator
+		var data struct {
+			ID uint `json:"id"`
+		}
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
 			log.Printf("Error binding JSON: %v", err)
@@ -641,10 +700,12 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, gin.H{"message": "Moderator deleted"})
 	})
 
-	// this needs ALOT of work
 	r.DELETE("/api/event", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
-		var data db.Event
+		var data struct {
+			ID uint `json:"id"`
+		}
+
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
 			log.Printf("Error binding JSON: %v", err)
@@ -660,7 +721,28 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		db.DeleteEvent(connection, data.ID)
+
 		ctx.JSON(200, gin.H{"message": "Event deleted"})
+	})
+
+	r.DELETE("/api/club", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+		var data struct {
+			ID uint `json:"id"`
+		}
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		authorized := db.CheckUserIsOwnerOfClub(connection, data.ID, user.ID)
+		if !authorized {
+			ctx.JSON(403, gin.H{"error": "Forbidden"})
+			return
+		}
+		db.DeleteClub(connection, data.ID)
+		ctx.JSON(200, gin.H{"message": "Club deleted"})
 	})
 
 	return r
