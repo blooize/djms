@@ -710,7 +710,8 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	r.DELETE("/api/club/moderator", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 		var data struct {
-			ID uint `json:"id"`
+			ID     uint `json:"id"`
+			ClubID uint `json:"club_id"`
 		}
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -725,7 +726,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		db.DeleteModerator(connection, data.ClubID, data.UserID)
+		db.DeleteModerator(connection, data.ClubID, user.ID)
 		ctx.JSON(200, gin.H{"message": "Moderator deleted"})
 	})
 
@@ -741,8 +742,14 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
+		event, found := db.GetEvent(connection, data.ID)
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+
 		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
-		authorized := db.CheckUserIsOwnerOfClub(connection, data.ClubID, user.ID)
+		authorized := db.CheckUserIsOwnerOfClub(connection, event.ClubID, user.ID)
 
 		if !authorized {
 			ctx.JSON(403, gin.H{"error": "Forbidden"})
