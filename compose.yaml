@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  djms-backend:
+    build:
+      context: ./djms-backend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+      - DISCORD_REDIRECT_URL=${DISCORD_REDIRECT_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./djms-backend:/app
+      - ./djms-backend/djms.db:/app/djms.db
+    depends_on:
+      - djms-discord-bot
+      - postgres
+    restart: unless-stopped
+    networks:
+      - djms-network
+
+  # Discord Bot Service
+  djms-discord-bot:
+    build:
+      context: ./djms-discord-bot
+      dockerfile: Dockerfile
+    ports:
+      - "6969:6969"
+    environment:
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+    volumes:
+      - ./djms-discord-bot:/app
+    restart: unless-stopped
+    networks:
+      - djms-network
+
+  # Frontend Service
+  djms-frontend:
+    build:
+      context: ./djms-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=${VITE_API_URL}
+    volumes:
+      - ./djms-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - djms-backend
+    restart: unless-stopped
+    networks:
+      - djms-network
+
+  # Postgres Service
+  postgres:
+    image: postgres:17.5-alpine3.22
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=djmsuser
+      - POSTGRES_PASSWORD=djmspassword
+      - POSTGRES_DB=djmsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - djms-network
+
+networks:
+  djms-network:
+    driver: bridge
+
+volumes:
+  node_modules:
+  postgres_data:
