@@ -75,13 +75,35 @@ type DancerSlotTalent struct {
 	DancerID     uint
 }
 
+type Message struct {
+	gorm.Model
+	MessageID uint64
+	ChannelID uint64
+	GuildID   uint64
+	ClubID    uint
+}
+
 func InitializeDatabase() *gorm.DB {
 	db, err := gorm.Open(sqlite.Open("djms.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
 	// migrate the schema
-	db.AutoMigrate(&User{}, &Club{}, &Event{}, &Talent{}, &VrcdnLink{}, &ClubModerator{}, &ClubOwner{}, &Slot{}, &Dancer{}, &DancerSlot{}, &SlotTalent{}, &DancerSlotTalent{})
+	db.AutoMigrate(
+		&User{},
+		&Club{},
+		&Event{},
+		&Talent{},
+		&VrcdnLink{},
+		&ClubModerator{},
+		&ClubOwner{},
+		&Slot{},
+		&Dancer{},
+		&DancerSlot{},
+		&SlotTalent{},
+		&DancerSlotTalent{},
+		&Message{},
+	)
 
 	return db
 }
