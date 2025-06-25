@@ -7,11 +7,12 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gin-gonic/gin"
 )
 
 func StartBot(token string) error {
 	dg, err := discordgo.New("Bot " + token)
+	go API(dg)
+
 	if err != nil {
 		return fmt.Errorf("error creating Discord session: %w", err)
 	}
@@ -44,26 +45,6 @@ func StartBot(token string) error {
 	// if err != nil {
 	// 	return fmt.Errorf("cannot create slash command: %w", err)
 	// }
-
-	go func() {
-		r := gin.Default()
-		r.POST("/update", func(c *gin.Context) {
-			jwt, err := c.Cookie("jwt")
-			if err != nil || jwt == "" {
-				c.String(401, "Missing or invalid JWT cookie")
-				return
-			}
-			channelID := "1386866380233510962"
-			_, err = dg.ChannelMessageSend(channelID, "Pong from API!")
-			if err != nil {
-				fmt.Printf("Failed to Update Message: %v\n", err)
-				c.String(500, "Failed to update message")
-				return
-			}
-			c.String(200, "Message sent!")
-		})
-		r.Run(":6969")
-	}()
 
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)
