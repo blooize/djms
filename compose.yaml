@@ -2,9 +2,9 @@ version: '3.8'
 
 services:
   # Backend API Service
-  djms-backend:
+  backend-app:
     build:
-      context: ./djms-backend
+      context: ./backend-app
       dockerfile: Dockerfile
     ports:
       - "4000:4000"
@@ -14,34 +14,35 @@ services:
       - DISCORD_REDIRECT_URL=${DISCORD_REDIRECT_URL}
       - JWT_SECRET=${JWT_SECRET}
     volumes:
-      - ./djms-backend:/app
-      - ./djms-backend/djms.db:/app/djms.db
+      - ./backend-app:/app
+      - ./backend-app/djms.db:/app/djms.db
     depends_on:
-      - djms-discord-bot
       - postgres
     restart: unless-stopped
     networks:
       - djms-network
 
   # Discord Bot Service
-  djms-discord-bot:
+  discord-app:
     build:
-      context: ./djms-discord-bot
+      context: ./discord-app
       dockerfile: Dockerfile
     ports:
       - "6969:6969"
     environment:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
     volumes:
-      - ./djms-discord-bot:/app
+      - ./discord-app:/app
+    depends_on:
+      - postgres
     restart: unless-stopped
     networks:
       - djms-network
 
   # Frontend Service
-  djms-frontend:
+  frontend-app:
     build:
-      context: ./djms-frontend
+      context: ./frontend-app
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
@@ -49,10 +50,10 @@ services:
       - NODE_ENV=development
       - VITE_API_URL=${VITE_API_URL}
     volumes:
-      - ./djms-frontend:/app
+      - ./frontend-app:/app
       - /app/node_modules
     depends_on:
-      - djms-backend
+      - backend-app
     restart: unless-stopped
     networks:
       - djms-network
