@@ -75,12 +75,13 @@ type DancerSlotTalent struct {
 	DancerID     uint
 }
 
-type Message struct {
+type SignUpForm struct {
 	gorm.Model
 	MessageID uint64
 	ChannelID uint64
 	GuildID   uint64
 	ClubID    uint
+	EventID   uint
 }
 
 func InitializeDatabase() *gorm.DB {
@@ -102,7 +103,7 @@ func InitializeDatabase() *gorm.DB {
 		&DancerSlot{},
 		&SlotTalent{},
 		&DancerSlotTalent{},
-		&Message{},
+		&SignUpForm{},
 	)
 
 	return db
