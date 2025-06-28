@@ -414,15 +414,17 @@ func UpdateDancerSlot(db *gorm.DB, dancerSlot DancerSlot) DancerSlot {
 	return dancerSlot
 }
 
-func DeleteModerator(db *gorm.DB, clubID uint, userID uint) {
+func DeleteModerator(db *gorm.DB, clubID uint, userID uint) error {
 	var moderator ClubModerator
 	db.First(&moderator, "club_id = ? AND user_id = ?", clubID, userID)
 	if moderator.ID != 0 {
 		db.Delete(&moderator)
+		return nil
 	}
+	return gorm.ErrRecordNotFound
 }
 
-func DeleteEvent(db *gorm.DB, eventID uint) {
+func DeleteEvent(db *gorm.DB, eventID uint) error {
 	var event Event
 	db.First(&event, eventID)
 	if event.ID != 0 {
@@ -440,10 +442,12 @@ func DeleteEvent(db *gorm.DB, eventID uint) {
 			DeleteDancerSlotTalents(db, dancerSlot.ID)
 			db.Delete(&dancerSlot)
 		}
+		return nil
 	}
+	return gorm.ErrRecordNotFound
 }
 
-func DeleteDancerSlotTalents(db *gorm.DB, slot uint) {
+func DeleteDancerSlotTalents(db *gorm.DB, slot uint) error {
 	var dancerSlotTalents []DancerSlotTalent
 	db.Find(&dancerSlotTalents, "dancer_slot_id = ?", slot)
 
@@ -451,10 +455,12 @@ func DeleteDancerSlotTalents(db *gorm.DB, slot uint) {
 		for _, dancerSlotTalent := range dancerSlotTalents {
 			db.Delete(&dancerSlotTalent)
 		}
+		return nil
 	}
+	return gorm.ErrRecordNotFound
 }
 
-func DeleteSlotTalents(db *gorm.DB, slot uint) {
+func DeleteSlotTalents(db *gorm.DB, slot uint) error {
 	var slotTalents []SlotTalent
 	db.Find(&slotTalents, "slot_id = ?", slot)
 
@@ -462,24 +468,31 @@ func DeleteSlotTalents(db *gorm.DB, slot uint) {
 		for _, slotTalent := range slotTalents {
 			db.Delete(&slotTalent)
 		}
+		return nil
 	}
+	return gorm.ErrRecordNotFound
 }
-func DeleteDancerSlot(db *gorm.DB, dancerSlotID uint) {
+
+func DeleteDancerSlot(db *gorm.DB, dancerSlotID uint) error {
 	var dancerSlot DancerSlot
 	db.First(&dancerSlot, dancerSlotID)
 	if dancerSlot.ID != 0 {
 		DeleteDancerSlotTalents(db, dancerSlotID)
 		db.Delete(&dancerSlot)
+		return nil
 	}
+	return gorm.ErrRecordNotFound
 }
 
-func DeleteSlot(db *gorm.DB, slotID uint) {
+func DeleteSlot(db *gorm.DB, slotID uint) error {
 	var slot Slot
 	db.First(&slot, slotID)
 	if slot.ID != 0 {
 		DeleteSlotTalents(db, slotID)
 		db.Delete(&slot)
+		return nil
 	}
+	return gorm.ErrRecordNotFound
 }
 
 func DeleteClub(db *gorm.DB, clubID uint) {
