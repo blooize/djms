@@ -26,7 +26,6 @@ WORKDIR /root/
 
 # Copy the binary from builder stage
 COPY --from=builder /app/main .
-COPY --from=builder /app/djms.db ./djms.db
 
 # Create .env file placeholder (will be overridden by environment variables)
 RUN touch .env
