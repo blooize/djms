@@ -80,21 +80,6 @@ services:
     networks:
       - djms-network
 
-  # Caddy Web Server
-  caddy:
-    image: caddy:2.10-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./conf:/etc/caddy
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - djms-network
-
 networks:
   djms-network:
     driver: bridge
@@ -102,5 +87,3 @@ networks:
 volumes:
   node_modules:
   postgres_data:
-  caddy_data:
-  caddy_config:
