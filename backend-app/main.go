@@ -16,7 +16,7 @@ func main() {
 
 	fmt.Printf("Database initialized: %v\n", connection != nil)
 
-	err := godotenv.Load(".env")
+	err := godotenv.Load(".env.dev")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
