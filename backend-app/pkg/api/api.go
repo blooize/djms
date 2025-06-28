@@ -342,7 +342,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 		ctx.JSON(201, club)
 	})
-
+	// discord bot only
 	r.GET("/api/signupform", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 
@@ -387,6 +387,57 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		res.EventID = event.ID
 		res.ClubID = event.ClubID
 		ctx.JSON(200, res)
+	})
+	// discord bot only
+	r.POST("/api/signupform", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+
+		var data struct {
+			MessageID   uint64 `json:"message_id"`
+			ChannelID   uint64 `json:"channel_id"`
+			GuildID     uint64 `json:"guild_id"`
+			EventID     uint   `json:"event_id"`
+			ClubID      uint   `json:"club_id"`
+			SecretToken string `json:"secret_token"`
+		}
+
+		var res struct {
+			MessageID uint64 `json:"message_id"`
+			ChannelID uint64 `json:"channel_id"`
+			GuildID   uint64 `json:"guild_id"`
+			EventID   uint   `json:"event_id"`
+			ClubID    uint   `json:"club_id"`
+		}
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		if data.SecretToken != secret_token {
+			ctx.JSON(403, gin.H{"error": "Forbidden"})
+			return
+		}
+
+		event, found := db.GetEvent(connection, data.EventID)
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+
+		form := db.CreateSignUpForm(connection, data.MessageID, data.ChannelID, data.GuildID, event.ID, event.ClubID)
+		if form.ID == 0 {
+			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
+			return
+		}
+
+		res.MessageID = form.MessageID
+		res.ChannelID = form.ChannelID
+		res.GuildID = form.GuildID
+		res.EventID = event.ID
+		res.ClubID = event.ClubID
+		ctx.JSON(201, res)
 	})
 
 	r.POST("/api/club/event", func(ctx *gin.Context) {
@@ -825,6 +876,37 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 		db.DeleteClub(connection, data.ID)
 		ctx.JSON(200, gin.H{"message": "Club deleted"})
+	})
+
+	r.DELETE("/api/signupform", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+		var data struct {
+			EventID     uint   `json:"event_id"`
+			SecretToken string `json:"secret_token"`
+		}
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		event, found := db.GetEvent(connection, data.EventID)
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+
+		if data.SecretToken != secret_token {
+			ctx.JSON(403, gin.H{"error": "Forbidden"})
+			return
+		}
+
+		if err := db.DeleteSignUpForm(connection, event.ID); err != nil {
+			ctx.JSON(404, gin.H{"error": "Sign up form not found"})
+			return
+		}
+		ctx.JSON(200, gin.H{"message": "Sign-up form deleted"})
 	})
 
 	return r
