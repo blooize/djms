@@ -7,14 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func API(dg *discordgo.Session) {
+func StartAPI(dg *discordgo.Session, backend_token string) {
 	r := gin.Default()
-	r.POST("/update/talent", func(c *gin.Context) {
+	r.POST("/createMessage", func(c *gin.Context) {
 		var data struct {
-			EventID uint `json:"event_id"`
+			EventID   uint   `json:"event_id"`
+			ChannelID string `json:"channel_id"`
 		}
-		// Todo: need to connect to the db to get the messageID of the event signup
-		// will probably be multiple messages and need to get just talent/dance slots
 		if err := c.ShouldBindJSON(&data); err != nil {
 			c.String(400, "Invalid request payload")
 			return
@@ -24,18 +23,37 @@ func API(dg *discordgo.Session) {
 			c.String(401, "Missing or invalid JWT cookie")
 			return
 		}
-		channelID := "1386866380233510962"
-		_, err = dg.ChannelMessageSend(channelID, "Pong from API!")
+		_, err = CreateMessage(dg, data.ChannelID)
 		if err != nil {
-			fmt.Printf("Failed to Update Message: %v\n", err)
-			c.String(500, "Failed to update message")
+			fmt.Printf("Failed to Create Message: %v\n", err)
+			c.String(500, "Failed to create message")
 			return
 		}
 		c.String(200, "Message sent!")
 	})
 
-	r.POST("/update/dancer", func(c *gin.Context) {
-
+	r.PATCH("/updateMessage", func(c *gin.Context) {
+		var data struct {
+			EventID   uint   `json:"event_id"`
+			ChannelID string `json:"channel_id"`
+			MessageID string `json:"message_id"`
+		}
+		if err := c.ShouldBindJSON(&data); err != nil {
+			c.String(400, "Invalid request payload")
+			return
+		}
+		jwt, err := c.Cookie("jwt")
+		if err != nil || jwt == "" {
+			c.String(401, "Missing or invalid JWT cookie")
+			return
+		}
+		err = RefreshMessage(dg, data.ChannelID, data.MessageID)
+		if err != nil {
+			fmt.Printf("Failed to Refresh Message: %v\n", err)
+			c.String(500, "Failed to refresh message")
+			return
+		}
+		c.String(200, "Message refreshed!")
 	})
 	r.Run(":6969")
 }
