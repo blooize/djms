@@ -345,6 +345,16 @@ func GetDancerSlotTalents(db *gorm.DB, DancerSlotID uint) []DancerSlotTalent {
 	return dancerTalents
 }
 
+func GetSignUpForm(db *gorm.DB, eventID uint) (SignUpForm, error) {
+	var signUpForm SignUpForm
+	db.First(&signUpForm, "event_id = ?", eventID)
+
+	if signUpForm.ID == 0 {
+		return signUpForm, gorm.ErrRecordNotFound
+	}
+	return signUpForm, nil
+}
+
 func CreateClub(db *gorm.DB, club Club) Club {
 	db.Create(&club)
 	return club
@@ -402,6 +412,18 @@ func CreateTalentSlot(db *gorm.DB, slotID uint, talentID uint) SlotTalent {
 	slotTalent := SlotTalent{SlotID: slotID, TalentID: talentID}
 	db.Create(&slotTalent)
 	return slotTalent
+}
+
+func CreateSignUpForm(db *gorm.DB, messageID uint64, channelID uint64, guildID uint64, clubID uint, eventID uint) SignUpForm {
+	signUpForm := SignUpForm{
+		MessageID: messageID,
+		ChannelID: channelID,
+		GuildID:   guildID,
+		ClubID:    clubID,
+		EventID:   eventID,
+	}
+	db.Create(&signUpForm)
+	return signUpForm
 }
 
 func UpdateSlot(db *gorm.DB, slot Slot) Slot {
@@ -495,7 +517,7 @@ func DeleteSlot(db *gorm.DB, slotID uint) error {
 	return gorm.ErrRecordNotFound
 }
 
-func DeleteClub(db *gorm.DB, clubID uint) {
+func DeleteClub(db *gorm.DB, clubID uint) error {
 	var club Club
 	db.First(&club, clubID)
 	if club.ID != 0 {
@@ -519,5 +541,17 @@ func DeleteClub(db *gorm.DB, clubID uint) {
 		}
 
 		db.Delete(&club)
+		return nil
 	}
+	return gorm.ErrRecordNotFound
+}
+
+func DeleteSignUpForm(db *gorm.DB, eventID uint) error {
+	var signUpForm SignUpForm
+	db.First(&signUpForm, "event_id = ?", eventID)
+	if signUpForm.ID != 0 {
+		db.Delete(&signUpForm)
+		return nil
+	}
+	return gorm.ErrRecordNotFound
 }
