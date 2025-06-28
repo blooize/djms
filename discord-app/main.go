@@ -11,10 +11,12 @@ import (
 func main() {
 	err := godotenv.Load(".env.dev")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("Error loading .env.dev file")
 	}
+	discord_bot_token := os.Getenv("DISCORD_BOT_TOKEN")
+	backend_token := os.Getenv("SECRET_TOKEN")
 
-	err = discord.StartBot(os.Getenv("DISCORD_BOT_TOKEN"), os.Getenv("SECRET_TOKEN"))
+	err = discord.StartBot(discord_bot_token, backend_token)
 	if err != nil {
 		log.Fatalf("[DISCORD] Error starting Discord bot: %v", err)
 	}

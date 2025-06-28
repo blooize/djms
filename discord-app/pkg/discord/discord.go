@@ -39,14 +39,20 @@ func CreateMessage(dg *discordgo.Session, channelID string) (string, error) {
 	return message.ID, nil
 }
 
-func RefreshMessage(dg *discordgo.Session, channelID, messageID string) error {
-	// This function is a placeholder for refreshing a message.
-	// Discord API does not support refreshing messages directly.
-	// You might want to edit the message or delete and resend it.
+func UpdateMessage(dg *discordgo.Session, channelID, messageID string) error {
 	_, err := dg.ChannelMessageEdit(channelID, messageID, "Updated message content")
 	if err != nil {
 		return fmt.Errorf("error editing message: %w", err)
 	}
 	fmt.Printf("Message with ID %s has been refreshed.\n", messageID)
+	return nil
+}
+
+func DeleteMessage(dg *discordgo.Session, channelID, messageID string) error {
+	err := dg.ChannelMessageDelete(channelID, messageID)
+	if err != nil {
+		return fmt.Errorf("error deleting message: %w", err)
+	}
+	fmt.Printf("Message with ID %s has been deleted.\n", messageID)
 	return nil
 }
