@@ -22,7 +22,7 @@ type DiscordRequestBody struct {
 	RedirectURI  string `json:"redirect_uri"`
 }
 
-func SetupRouter(client_id string, client_secret string, redirect_uri string, jwt_secret string) *gin.Engine {
+func SetupRouter(client_id string, client_secret string, redirect_uri string, jwt_secret string, secret_token string) *gin.Engine {
 	r := gin.Default()
 	r.Use(AuthMiddleware(jwt_secret))
 
@@ -341,6 +341,52 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		db.CreateClubOwner(connection, club.ID, user.ID)
 
 		ctx.JSON(201, club)
+	})
+
+	r.GET("/api/signupform", func(ctx *gin.Context) {
+		connection := db.InitializeDatabase()
+
+		var data struct {
+			EventID     uint `json:"event_id"`
+			secretToken string
+		}
+
+		var res struct {
+			MessageID uint64 `json:"message_id"`
+			ChannelID uint64 `json:"channel_id"`
+			GuildID   uint64 `json:"guild_id"`
+			EventID   uint   `json:"event_id"`
+			ClubID    uint   `json:"club_id"`
+		}
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		if data.secretToken != secret_token {
+			ctx.JSON(403, gin.H{"error": "Forbidden"})
+			return
+		}
+
+		event, found := db.GetEvent(connection, data.EventID)
+		if !found {
+			ctx.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
+
+		form, err := db.GetSignUpForm(connection, event.ID)
+		if err != nil {
+			ctx.JSON(404, gin.H{"error": "Sign up form not found"})
+			return
+		}
+		res.MessageID = form.MessageID
+		res.ChannelID = form.ChannelID
+		res.GuildID = form.GuildID
+		res.EventID = event.ID
+		res.ClubID = event.ClubID
+		ctx.JSON(200, res)
 	})
 
 	r.POST("/api/club/event", func(ctx *gin.Context) {

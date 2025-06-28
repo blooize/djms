@@ -25,7 +25,7 @@ func main() {
 	client_secret := os.Getenv("DISCORD_CLIENT_SECRET")
 	redirect_uri := os.Getenv("DISCORD_REDIRECT_URL")
 	jwt_secret := os.Getenv("JWT_SECRET")
-
-	r := api.SetupRouter(client_id, client_secret, redirect_uri, jwt_secret)
+	secret_token := os.Getenv("SECRET_TOKEN")
+	r := api.SetupRouter(client_id, client_secret, redirect_uri, jwt_secret, secret_token)
 	r.Run(":4000")
 }
