@@ -14,7 +14,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	err = discord.StartBot(os.Getenv("DISCORD_BOT_TOKEN"))
+	err = discord.StartBot(os.Getenv("DISCORD_BOT_TOKEN"), os.Getenv("SECRET_TOKEN"))
 	if err != nil {
 		log.Fatalf("[DISCORD] Error starting Discord bot: %v", err)
 	}
