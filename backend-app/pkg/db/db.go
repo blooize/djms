@@ -81,9 +81,9 @@ type DancerSlotTalent struct {
 
 type SignUpForm struct {
 	gorm.Model
-	MessageID uint64
-	ChannelID uint64
-	GuildID   uint64
+	MessageID string
+	ChannelID string
+	GuildID   string
 	ClubID    uint
 	EventID   uint
 }
@@ -414,7 +414,7 @@ func CreateTalentSlot(db *gorm.DB, slotID uint, talentID uint) SlotTalent {
 	return slotTalent
 }
 
-func CreateSignUpForm(db *gorm.DB, messageID uint64, channelID uint64, guildID uint64, clubID uint, eventID uint) SignUpForm {
+func CreateSignUpForm(db *gorm.DB, messageID string, channelID string, guildID string, clubID uint, eventID uint) SignUpForm {
 	signUpForm := SignUpForm{
 		MessageID: messageID,
 		ChannelID: channelID,

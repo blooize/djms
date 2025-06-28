@@ -352,9 +352,9 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		var res struct {
-			MessageID uint64 `json:"message_id"`
-			ChannelID uint64 `json:"channel_id"`
-			GuildID   uint64 `json:"guild_id"`
+			MessageID string `json:"message_id"`
+			ChannelID string `json:"channel_id"`
+			GuildID   string `json:"guild_id"`
 			EventID   uint   `json:"event_id"`
 			ClubID    uint   `json:"club_id"`
 		}
@@ -393,18 +393,18 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		connection := db.InitializeDatabase()
 
 		var data struct {
-			MessageID   uint64 `json:"message_id"`
-			ChannelID   uint64 `json:"channel_id"`
-			GuildID     uint64 `json:"guild_id"`
+			MessageID   string `json:"message_id"`
+			ChannelID   string `json:"channel_id"`
+			GuildID     string `json:"guild_id"`
 			EventID     uint   `json:"event_id"`
 			ClubID      uint   `json:"club_id"`
 			SecretToken string `json:"secret_token"`
 		}
 
 		var res struct {
-			MessageID uint64 `json:"message_id"`
-			ChannelID uint64 `json:"channel_id"`
-			GuildID   uint64 `json:"guild_id"`
+			MessageID string `json:"message_id"`
+			ChannelID string `json:"channel_id"`
+			GuildID   string `json:"guild_id"`
 			EventID   uint   `json:"event_id"`
 			ClubID    uint   `json:"club_id"`
 		}
