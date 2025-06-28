@@ -1,7 +1,11 @@
 package db
 
 import (
-	"gorm.io/driver/sqlite"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -85,7 +89,18 @@ type SignUpForm struct {
 }
 
 func InitializeDatabase() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("djms.db"), &gorm.Config{})
+	err := godotenv.Load(".env.dev")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	postgres_db := os.Getenv("POSTGRES_DB")
+	postgres_user := os.Getenv("POSTGRES_USER")
+	postgres_password := os.Getenv("POSTGRES_PASSWORD")
+	postgres_host := os.Getenv("POSTGRES_HOST")
+	postgres_port := os.Getenv("POSTGRES_PORT")
+
+	dsn := "host=" + postgres_host + " user=" + postgres_user + " password=" + postgres_password + " dbname=" + postgres_db + " port=" + postgres_port + " sslmode=disable TimeZone=Europe/Berlin"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
