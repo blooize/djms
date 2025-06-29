@@ -27,6 +27,9 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowCredentials: true,
+		AllowOrigins:     []string{"http://localhost:3000", "http://djms.praxis.club"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Cookie"},
 	}))
 
 	public := r.Group("/")
@@ -40,6 +43,15 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ClientID:     client_id,
 		ClientSecret: client_secret,
 	}
+	private.GET("/me", func(ctx *gin.Context) {
+		userID, exists := ctx.Get("userID")
+		if !exists {
+			ctx.JSON(401, gin.H{"error": "Unauthorized"})
+			return
+		}
+		ctx.JSON(200, gin.H{"user_id": userID})
+	})
+
 	// routessss yessir
 	public.GET("/auth/discord/login", func(ctx *gin.Context) {
 		url := "https://discord.com/oauth2/authorize?client_id=1382418824237813911&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fauth%2Fdiscord%2Fcallback&scope=identify"
