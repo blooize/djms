@@ -44,12 +44,13 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ClientSecret: client_secret,
 	}
 	private.GET("/me", func(ctx *gin.Context) {
-		userID, exists := ctx.Get("userID")
+		discordID, exists := ctx.Get("discordID")
 		if !exists {
 			ctx.JSON(401, gin.H{"error": "Unauthorized"})
 			return
 		}
-		ctx.JSON(200, gin.H{"user_id": userID})
+		userData := db.GetUserByDiscordID(db.InitializeDatabase(), discordID.(string))
+		ctx.JSON(200, gin.H{"user_id": discordID, "username": userData.Username, "avatar": userData.Avatar})
 	})
 
 	// routessss yessir
@@ -110,7 +111,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		ctx.SetCookie("jwt", s, 600000, "/", "localhost", false, true)
+		ctx.SetCookie("jwt", s, 600000, "/", "localhost", false, false)
 		ctx.Redirect(302, "http://localhost:3000/")
 		// theres more to do here with authentication/authorization but i want to do less annoying stuff now
 	})

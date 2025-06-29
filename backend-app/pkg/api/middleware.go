@@ -10,10 +10,27 @@ import (
 
 func AuthMiddleware(jwt_secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString, err := c.Cookie("jwt")
-		if err != nil || tokenString == "" {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			log.Printf("Unauthorized access: %v", err)
+			log.Printf("Unauthorized access: missing Authorization header")
+			c.Abort()
+			return
+		}
+
+		// Check if it starts with "Bearer "
+		const bearerPrefix = "Bearer "
+		if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			log.Printf("Unauthorized access: invalid Authorization header format, %s", authHeader)
+			c.Abort()
+			return
+		}
+
+		tokenString := authHeader[len(bearerPrefix):]
+		if tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			log.Printf("Unauthorized access: empty token")
 			c.Abort()
 			return
 		}
@@ -27,9 +44,9 @@ func AuthMiddleware(jwt_secret string) gin.HandlerFunc {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			c.Set("userID", claims["sub"])
+			c.Set("discordID", claims["sub"])
 		} else {
-			c.Set("userID", nil)
+			c.Set("discordID", nil)
 			log.Println(err)
 		}
 		c.Next()
