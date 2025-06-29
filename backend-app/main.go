@@ -18,7 +18,7 @@ func main() {
 
 	err := godotenv.Load(".env.dev")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env.dev file: %v", err)
 	}
 
 	client_id := os.Getenv("DISCORD_CLIENT_ID")

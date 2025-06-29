@@ -99,7 +99,7 @@ func InitializeDatabase() *gorm.DB {
 	postgres_host := os.Getenv("POSTGRES_HOST")
 	postgres_port := os.Getenv("POSTGRES_PORT")
 
-	dsn := "host=" + postgres_host + " user=" + postgres_user + " password=" + postgres_password + " dbname=" + postgres_db + " port=" + postgres_port + " sslmode=disable TimeZone=Europe/Berlin"
+	dsn := "host=" + postgres_host + " user=" + postgres_user + " password=" + postgres_password + " dbname=" + postgres_db + " port=" + postgres_port + " sslmode=disable TimeZone=UTC"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")

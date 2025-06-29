@@ -8,6 +8,7 @@ import (
 	"main/pkg/db"
 	"strconv"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/ravener/discord-oauth2"
@@ -24,7 +25,13 @@ type DiscordRequestBody struct {
 
 func SetupRouter(client_id string, client_secret string, redirect_uri string, jwt_secret string, secret_token string) *gin.Engine {
 	r := gin.Default()
-	r.Use(AuthMiddleware(jwt_secret))
+	r.Use(cors.New(cors.Config{
+		AllowCredentials: true,
+	}))
+
+	public := r.Group("/")
+	private := r.Group("/")
+	private.Use(AuthMiddleware(jwt_secret))
 
 	conf := &oauth2.Config{
 		Endpoint:     discord.Endpoint,
@@ -34,23 +41,12 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ClientSecret: client_secret,
 	}
 	// routessss yessir
-	r.GET("/", func(c *gin.Context) {
-		foo, err := c.Get("userID")
-		if !err {
-			c.JSON(500, gin.H{"error": "Internal Server Error"})
-			log.Fatalf("Error getting userID from context: %v", err)
-			return
-		}
-
-		c.String(200, foo.(string))
-	})
-
-	r.GET("/auth/discord/login", func(ctx *gin.Context) {
+	public.GET("/auth/discord/login", func(ctx *gin.Context) {
 		url := "https://discord.com/oauth2/authorize?client_id=1382418824237813911&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fauth%2Fdiscord%2Fcallback&scope=identify"
 		ctx.Redirect(302, url)
 	})
 
-	r.GET("/auth/discord/callback", func(ctx *gin.Context) {
+	public.GET("/auth/discord/callback", func(ctx *gin.Context) {
 		code := ctx.Query("code")
 		if code == "" {
 			ctx.JSON(400, gin.H{"error": "Internal Server Error"})
@@ -81,7 +77,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
-			log.Fatalf("Error unmarshalling user data: %v", err)
+			log.Printf("Error unmarshalling user data: %v", err)
 			return
 		}
 
@@ -98,16 +94,16 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
-			log.Fatalf("Error signing JWT: %v", err)
+			log.Printf("Error signing JWT: %v", err)
 			return
 		}
 
 		ctx.SetCookie("jwt", s, 600000, "/", "localhost", false, true)
-		ctx.Redirect(302, "http://localhost:4000/")
+		ctx.Redirect(302, "http://localhost:3000/")
 		// theres more to do here with authentication/authorization but i want to do less annoying stuff now
 	})
 
-	r.GET("/api/clubs", func(ctx *gin.Context) {
+	private.GET("/api/clubs", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 
 		type Club struct {
@@ -138,7 +134,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, res)
 	})
 
-	r.GET("/api/club", func(ctx *gin.Context) {
+	private.GET("/api/club", func(ctx *gin.Context) {
 		var data struct {
 			ClubID uint `json:"club_id"`
 		}
@@ -165,7 +161,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, res)
 	})
 
-	r.GET("/api/djslots", func(ctx *gin.Context) {
+	private.GET("/api/djslots", func(ctx *gin.Context) {
 		var data struct {
 			EventID uint `json:"event_id"`
 		}
@@ -231,7 +227,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	// this fucking sucks and would be better if i just used a join but im too dumb for that right now
-	r.GET("/api/event/dancerslots", func(ctx *gin.Context) {
+	private.GET("/api/event/dancerslots", func(ctx *gin.Context) {
 		var data struct {
 			EventID uint `json:"event_id"`
 		}
@@ -291,7 +287,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, res)
 	})
 
-	r.GET("/api/club/event", func(ctx *gin.Context) {
+	private.GET("/api/club/event", func(ctx *gin.Context) {
 		var data struct {
 			EventID uint `json:"event_id"`
 		}
@@ -326,7 +322,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, res)
 	})
 
-	r.POST("/api/club", func(ctx *gin.Context) {
+	private.POST("/api/club", func(ctx *gin.Context) {
 		var foo db.Club
 		connection := db.InitializeDatabase()
 
@@ -343,7 +339,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(201, club)
 	})
 	// discord bot only
-	r.GET("/api/signupform", func(ctx *gin.Context) {
+	private.GET("/api/signupform", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 
 		var data struct {
@@ -389,7 +385,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, res)
 	})
 	// discord bot only
-	r.POST("/api/signupform", func(ctx *gin.Context) {
+	private.POST("/api/signupform", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 
 		var data struct {
@@ -440,7 +436,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(201, res)
 	})
 
-	r.POST("/api/club/event", func(ctx *gin.Context) {
+	private.POST("/api/club/event", func(ctx *gin.Context) {
 		var foo db.Event
 		connection := db.InitializeDatabase()
 
@@ -461,7 +457,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(201, event)
 	})
 
-	r.POST("/api/talent", func(ctx *gin.Context) {
+	private.POST("/api/talent", func(ctx *gin.Context) {
 		var data struct {
 			Name string `json:"name"`
 		}
@@ -484,7 +480,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	})
 
-	r.POST("/api/event/slot", func(ctx *gin.Context) {
+	private.POST("/api/event/slot", func(ctx *gin.Context) {
 		var data struct {
 			EventID    uint     `json:"event_id"`
 			Date       uint64   `json:"date"`
@@ -549,7 +545,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(201, res)
 	})
 
-	r.POST("/api/event/dancerslot", func(ctx *gin.Context) {
+	private.POST("/api/event/dancerslot", func(ctx *gin.Context) {
 
 		connection := db.InitializeDatabase()
 
@@ -617,7 +613,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(201, res)
 	})
 
-	r.POST("/api/dancer", func(ctx *gin.Context) {
+	private.POST("/api/dancer", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 
 		var data struct {
@@ -641,7 +637,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(201, res)
 	})
 
-	r.POST("/api/club/moderator", func(ctx *gin.Context) {
+	private.POST("/api/club/moderator", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 		var data struct {
 			ClubID uint `json:"club_id"`
@@ -675,7 +671,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(201, res)
 	})
 
-	r.PUT("/api/event/slot", func(ctx *gin.Context) {
+	private.PUT("/api/event/slot", func(ctx *gin.Context) {
 		type Talent struct {
 			ID   uint   `json:"id"`
 			Name string `json:"name"`
@@ -738,7 +734,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	})
 
-	r.PUT("/api/event/dancerslot", func(ctx *gin.Context) {
+	private.PUT("/api/event/dancerslot", func(ctx *gin.Context) {
 		type Dancer struct {
 			ID   uint   `json:"id"`
 			Name string `json:"name"`
@@ -804,7 +800,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(202, res)
 	})
 
-	r.DELETE("/api/club/moderator", func(ctx *gin.Context) {
+	private.DELETE("/api/club/moderator", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 		var data struct {
 			ID     uint `json:"id"`
@@ -827,7 +823,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, gin.H{"message": "Moderator deleted"})
 	})
 
-	r.DELETE("/api/event", func(ctx *gin.Context) {
+	private.DELETE("/api/event", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 		var data struct {
 			ID uint `json:"id"`
@@ -858,7 +854,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, gin.H{"message": "Event deleted"})
 	})
 
-	r.DELETE("/api/club", func(ctx *gin.Context) {
+	private.DELETE("/api/club", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 		var data struct {
 			ID uint `json:"id"`
@@ -878,7 +874,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, gin.H{"message": "Club deleted"})
 	})
 
-	r.DELETE("/api/signupform", func(ctx *gin.Context) {
+	private.DELETE("/api/signupform", func(ctx *gin.Context) {
 		connection := db.InitializeDatabase()
 		var data struct {
 			EventID     uint   `json:"event_id"`
