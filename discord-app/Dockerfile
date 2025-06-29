@@ -28,7 +28,7 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 
 # Create .env file placeholder (will be overridden by environment variables)
-RUN touch .env
+RUN touch .env.dev
 
 # Command to run
 CMD ["./main"]
