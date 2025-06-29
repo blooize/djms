@@ -1,4 +1,4 @@
-FROM node:latest-alpine
+FROM node:lts-alpine
 
 # Set working directory
 WORKDIR /app
@@ -11,6 +11,9 @@ RUN npm install
 
 # Copy source code
 COPY . .
+
+# Build the application
+RUN npm run build
 
 # Expose port 3000
 EXPOSE 3000

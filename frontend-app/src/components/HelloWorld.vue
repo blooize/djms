@@ -12,7 +12,6 @@
       </div>
       <v-card class="text-center">
         <v-btn
-        :ref="loginButton"
         size="large"
         prepend-icon="mdi-account-circle"
         @click="redirectToDiscord"
@@ -27,6 +26,6 @@
 
 <script setup lang="ts">
 const redirectToDiscord = () => {
-  window.location.href = 'http://localhost:3000/api/auth/discord';
+  window.location.href = 'http://localhost:4000/auth/discord/login';
 }
 </script>

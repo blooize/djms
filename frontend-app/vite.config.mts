@@ -67,6 +67,9 @@ export default defineConfig({
   server: {
     allowedHosts: ['djms.praxis.club', 'localhost'],
     port: 3000,
+    cors: {
+      credentials: true,
+    },
   },
   css: {
     preprocessorOptions: {
