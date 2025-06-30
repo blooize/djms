@@ -128,7 +128,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			Clubs []Club `json:"clubs"`
 		}
 
-		user_id := ctx.MustGet("userID").(string)
+		user_id := ctx.MustGet("discordID").(string)
 		userID := db.GetUserByDiscordID(connection, user_id)
 
 		clubs, err := db.GetClubsOwnedByUserID(connection, strconv.Itoa(int(userID.ID))) //i believe .MustGet essentially forces authorization
@@ -335,6 +335,45 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, res)
 	})
 
+	private.GET("/api/club/events", func(ctx *gin.Context) {
+
+		var data struct {
+			ClubID uint `json:"club_id"`
+		}
+
+		type Event struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
+
+		var res struct {
+			Events []Event `json:"events"`
+		}
+
+		connection := db.InitializeDatabase()
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
+			ctx.JSON(400, gin.H{"error": "Bad Request"})
+			log.Printf("Error binding JSON: %v", err)
+			return
+		}
+
+		events := db.GetEventsByClubID(connection, data.ClubID)
+		for _, event := range events {
+			event, found := db.GetEvent(connection, event.ID)
+			if !found {
+				ctx.JSON(404, gin.H{"error": "Event not found"})
+				return
+			}
+			res.Events = append(res.Events, Event{
+				ID:   event.ID,
+				Name: event.Name,
+			})
+		}
+
+		ctx.JSON(200, res)
+	})
+
 	private.POST("/api/club", func(ctx *gin.Context) {
 		var foo db.Club
 		connection := db.InitializeDatabase()
@@ -346,7 +385,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		club := db.CreateClub(connection, db.Club{Name: foo.Name})
-		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("discordID").(string))
 		db.CreateClubOwner(connection, club.ID, user.ID)
 
 		ctx.JSON(201, club)
