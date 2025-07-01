@@ -35,7 +35,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	public := r.Group("/")
 	private := r.Group("/")
 	private.Use(AuthMiddleware(jwt_secret))
-
+	connection := db.InitializeDatabase()
 	conf := &oauth2.Config{
 		Endpoint:     discord.Endpoint,
 		Scopes:       []string{discord.ScopeIdentify},
@@ -98,7 +98,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		username := userData["username"].(string)
 		avatar := userData["avatar"].(string)
 
-		connection := db.InitializeDatabase()
 		db.CheckUserExists(connection, username, discordID, avatar)
 		t := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"sub": discordID,
@@ -117,7 +116,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.GET("/api/clubs", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
 
 		type Club struct {
 			ID   uint   `json:"id"`
@@ -155,7 +153,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			ID   uint   `json:"id"`
 			Name string `json:"name"`
 		}
-		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -193,7 +190,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			ClubID  uint         `json:"club_id"`
 			Slots   []TalentSlot `json:"slots"`
 		}
-		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -261,8 +257,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			DancerSlots []Slots `json:"dancer_slots"`
 		}
 
-		connection := db.InitializeDatabase()
-
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
 			log.Printf("Error binding JSON: %v", err)
@@ -313,8 +307,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			DancerSlots []db.DancerSlot `json:"dancer_slots"`
 		}
 
-		connection := db.InitializeDatabase()
-
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
 			log.Printf("Error binding JSON: %v", err)
@@ -346,8 +338,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			Events []Event `json:"events"`
 		}
 
-		connection := db.InitializeDatabase()
-
 		clubID, err := strconv.Atoi(ctx.Query("club_id"))
 		if err != nil {
 			ctx.JSON(400, gin.H{"error": "Invalid club ID"})
@@ -371,16 +361,23 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.POST("/api/club", func(ctx *gin.Context) {
-		var foo db.Club
-		connection := db.InitializeDatabase()
+		var data struct {
+			Name string `json:"name"`
+		}
 
-		if err := ctx.ShouldBindJSON(&foo); err != nil {
+		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
 			log.Printf("Error binding JSON: %v", err)
 			return
 		}
 
-		club := db.CreateClub(connection, db.Club{Name: foo.Name})
+		if data.Name == "" {
+			ctx.JSON(400, gin.H{"error": "Club name cannot be empty"})
+			log.Println("Club name cannot be empty")
+			return
+		}
+
+		club := db.CreateClub(connection, db.Club{Name: data.Name})
 		user := db.GetUserByDiscordID(connection, ctx.MustGet("discordID").(string))
 		db.CreateClubOwner(connection, club.ID, user.ID)
 
@@ -388,7 +385,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 	// discord bot only
 	private.GET("/api/signupform", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
 
 		var data struct {
 			EventID     uint `json:"event_id"`
@@ -434,7 +430,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 	// discord bot only
 	private.POST("/api/signupform", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
 
 		var data struct {
 			MessageID   string `json:"message_id"`
@@ -486,7 +481,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	private.POST("/api/club/event", func(ctx *gin.Context) {
 		var foo db.Event
-		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&foo); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -514,7 +508,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			ID   uint   `json:"id"`
 			Name string `json:"name"`
 		}
-		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -545,8 +538,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			SlotID  uint     `json:"slot_id"`
 			Talents []Talent `json:"talents"`
 		}
-
-		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -594,8 +585,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.POST("/api/event/dancerslot", func(ctx *gin.Context) {
-
-		connection := db.InitializeDatabase()
 
 		var data struct {
 			EventID     uint     `json:"event_id"`
@@ -662,7 +651,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.POST("/api/dancer", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
 
 		var data struct {
 			Name string `json:"name"`
@@ -686,7 +674,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.POST("/api/club/moderator", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
+
 		var data struct {
 			ClubID uint `json:"club_id"`
 			UserID uint `json:"user_id"`
@@ -736,7 +724,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			SlotID  uint     `json:"slot_id"`
 			Talents []Talent `json:"talents"`
 		}
-		connection := db.InitializeDatabase()
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
@@ -788,7 +775,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			Name string `json:"name"`
 		}
 
-		connection := db.InitializeDatabase()
 		var data struct {
 			EventID     uint     `json:"event_id"`
 			Date        uint64   `json:"date"`
@@ -849,7 +835,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.DELETE("/api/club/moderator", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
+
 		var data struct {
 			ID     uint `json:"id"`
 			ClubID uint `json:"club_id"`
@@ -872,7 +858,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.DELETE("/api/event", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
+
 		var data struct {
 			ID uint `json:"id"`
 		}
@@ -903,7 +889,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.DELETE("/api/club", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
+
 		var data struct {
 			ID uint `json:"id"`
 		}
@@ -923,7 +909,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.DELETE("/api/signupform", func(ctx *gin.Context) {
-		connection := db.InitializeDatabase()
+
 		var data struct {
 			EventID     uint   `json:"event_id"`
 			SecretToken string `json:"secret_token"`
