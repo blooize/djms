@@ -38,9 +38,12 @@ const checkUserAuth = async () => {
       },
     })
     console.log('User authenticated:', response.data)
-    discordID.value = response.data.discord_id
+    discordID.value = response.data.user_id
     username.value = response.data.username
-    avatarURL.value = response.data.avatar
+    const url = response.data.avatar
+      ? `https://cdn.discordapp.com/avatars/${response.data.user_id}/${response.data.avatar}.png`
+      : 'https://cdn.discordapp.com/embed/avatars/0.png'
+    avatarURL.value = url
     isLoggedIn.value = true
   } catch (error) {
     console.log('User not authenticated:', error)
