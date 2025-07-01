@@ -705,7 +705,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		//auth check to be sure
-		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("discordID").(string))
 		authorized := db.CheckUserIsOwnerOfClub(connection, data.ClubID, user.ID)
 		if !authorized {
 			ctx.JSON(403, gin.H{"error": "Forbidden"})
@@ -859,7 +859,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			log.Printf("Error binding JSON: %v", err)
 			return
 		}
-		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("discordID").(string))
 		authorized := db.CheckUserIsOwnerOfClub(connection, data.ClubID, user.ID)
 
 		if !authorized {
@@ -889,7 +889,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("discordID").(string))
 		authorized := db.CheckUserIsOwnerOfClub(connection, event.ClubID, user.ID)
 
 		if !authorized {
@@ -912,8 +912,8 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			log.Printf("Error binding JSON: %v", err)
 			return
 		}
-		user := db.GetUserByDiscordID(connection, ctx.MustGet("userID").(string))
-		authorized := db.CheckUserIsOwnerOfClub(connection, data.ID, user.ID)
+		user := db.GetUserByDiscordID(connection, ctx.MustGet("discordID").(string))
+		authorized := db.CheckUserIsOwnerOfClub(connection, user.ID, data.ID)
 		if !authorized {
 			ctx.JSON(403, gin.H{"error": "Forbidden"})
 			return
