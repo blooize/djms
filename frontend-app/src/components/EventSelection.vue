@@ -1,9 +1,11 @@
 <template>
     <v-container class="">
         <v-select
+        clearable
         v-model="selectedEvent"
         label="Select an event"
         :items="eventNames"
+        variant="outlined"
         ></v-select>
     </v-container>
 </template>

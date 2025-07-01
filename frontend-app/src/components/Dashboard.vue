@@ -1,6 +1,6 @@
 <template>
   <v-container class="p-4">
-    <v-row no-gutters align="center">
+    <v-row align="center">
       <v-col cols="" class="d-flex align-start">
         <div class="d-flex align-center">
           <v-img
@@ -23,17 +23,15 @@
         </div>
       </v-col>
 
-      <v-col cols="4" class="d-flex justify-center">
+      <v-col cols="5" class="d-flex justify-center">
         <club-selection :clubs="clubs" @select-club="($event) => {
-          selectedClub.name = $event
-          console.log('Selected club:', selectedClub)
-          fetchEvents()
+          selectedClub = $event
         }" />
         <club-create-dialog @new-club="createClub($event)"/>
       </v-col>
     </v-row>
     <v-row>
-      <v-col cols="3" v-if="selectedClub.id !== -1" class="d-flex justify-center">
+      <v-col cols="3" v-if="selectedClub" class="d-flex justify-center">
         <event-selection :events="events" @select-event="selectedEvent = $event" />
       </v-col>
     </v-row>
@@ -44,11 +42,11 @@
 import { defineProps, onMounted, ref, watch, computed } from 'vue'
 import axios from 'axios'
 
-let selectedClub = ref({id: 0, name: ''})
-let selectedEvent = ref({id: 0, name: ''})
+let selectedClub = ref<{ id: number, name: string } | null>(null)
+let selectedEvent = ref<string>()
 
 let clubs = ref([{ id: 0, name: '' }])
-let events = ref([{ id: 0, name: '' }])
+let events = ref<Array<{ id: number, name: string }>>()
 
 const props = defineProps([
     'DiscordID',
@@ -61,6 +59,7 @@ const logout = () => {
     localStorage.removeItem('jwt')
     window.location.reload()
 }
+
 const fetchClubs = async () => {
     const jwtToken = localStorage.getItem('jwt')
     const response = await axios.get('http://localhost:4000/api/clubs', {
@@ -68,8 +67,11 @@ const fetchClubs = async () => {
         'Authorization': `Bearer ${jwtToken || ''}`
       }
     })
-
-    clubs.value = response.data.clubs
+    if (response.data.clubs.length === 0) {
+      clubs.value = [{ id: 0, name: 'No clubs found' }]
+    } else {
+      clubs.value = response.data.clubs
+    }
 }
 
 const fetchEvents = async () => {
@@ -79,7 +81,7 @@ const fetchEvents = async () => {
       'Authorization': `Bearer ${jwtToken || ''}`
     },
     params: {
-      club_id: selectedClub.value.id
+      club_id: selectedClub.value?.id
     }
   })
 
@@ -102,9 +104,7 @@ const createClub = async (name: string) => {
 }
 
 watch(selectedClub, (newValue) => {
-  if (newValue.id !== 0) {
-    fetchEvents()
-  }
+  fetchEvents()
 })
 
 
