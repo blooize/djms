@@ -337,10 +337,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	private.GET("/api/club/events", func(ctx *gin.Context) {
 
-		var data struct {
-			ClubID uint `json:"club_id"`
-		}
-
 		type Event struct {
 			ID   uint   `json:"id"`
 			Name string `json:"name"`
@@ -352,13 +348,13 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 		connection := db.InitializeDatabase()
 
-		if err := ctx.ShouldBindJSON(&data); err != nil {
-			ctx.JSON(400, gin.H{"error": "Bad Request"})
-			log.Printf("Error binding JSON: %v", err)
+		clubID, err := strconv.Atoi(ctx.Query("club_id"))
+		if err != nil {
+			ctx.JSON(400, gin.H{"error": "Invalid club ID"})
 			return
 		}
 
-		events := db.GetEventsByClubID(connection, data.ClubID)
+		events := db.GetEventsByClubID(connection, uint(clubID))
 		for _, event := range events {
 			event, found := db.GetEvent(connection, event.ID)
 			if !found {
