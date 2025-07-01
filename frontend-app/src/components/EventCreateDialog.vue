@@ -1,9 +1,11 @@
 <template>
     <div>
         <v-btn
+            size="default"
             color="primary"
+            class=""
             @click="dialog = true"
-        >New Club</v-btn>
+        >New Event</v-btn>
 
         <v-dialog
             v-model="dialog"
@@ -11,12 +13,12 @@
         >
             <v-card
                 max-width="400"
-                title="Enter new Club Name"
+                title="Enter new Event Name"
             >
                 <v-card-text>
                     <v-text-field
-                        v-model="clubName"
-                        label="Club Name"
+                        v-model="eventName"
+                        label="Event Name"
                         @input="validateInput"
                         variant="outlined"
                     />
@@ -28,7 +30,7 @@
                         append-icon="mdi-check"
                         @click="() => {
                             dialog = false
-                            $emit('new-club', clubName)
+                            $emit('new-event', eventName)
                         }"
                     >
                         Accept
@@ -53,10 +55,10 @@ import { ref } from 'vue'
 
 let validInput = ref(false)
 let dialog = ref(false)
-let clubName = ref<string>()
+let eventName = ref<string>()
 
 const validateInput = () => {
-    if(clubName.value && clubName.value !== '') {
+    if(eventName.value && eventName.value !== '') {
         validInput.value = true
     } else {
         validInput.value = false
