@@ -365,6 +365,11 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			Name string `json:"name"`
 		}
 
+		var res struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
+
 		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
 			log.Printf("Error binding JSON: %v", err)
@@ -380,8 +385,9 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		club := db.CreateClub(connection, db.Club{Name: data.Name})
 		user := db.GetUserByDiscordID(connection, ctx.MustGet("discordID").(string))
 		db.CreateClubOwner(connection, club.ID, user.ID)
-
-		ctx.JSON(201, club)
+		res.ID = club.ID
+		res.Name = club.Name
+		ctx.JSON(201, res)
 	})
 	// discord bot only
 	private.GET("/api/signupform", func(ctx *gin.Context) {
