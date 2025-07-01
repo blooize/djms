@@ -13,7 +13,7 @@ import { computed, ref, watch } from 'vue'
 
 const props = defineProps(['events'])
 const emit = defineEmits(['select-event'])
-const selectedEvent = ref('')
+const selectedEvent = ref()
 
 const eventNames = computed(() => {
   return props.events ? props.events.map((event: any) => event.name) : []

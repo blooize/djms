@@ -1,10 +1,23 @@
 <template>
     <v-container class="">
-        <v-select
-        v-model="selectedClub"
-        label="Select a club"
-        :items="clubNames"
-        ></v-select>
+        <v-slide-group
+            show-arrows
+        >
+            <v-slide-item
+                v-for="club in clubNames"
+                :key="club"
+                class="d-flex align-center justify-center"
+            >
+                <v-btn
+                    :color="selectedClub === club ? 'primary' : '#000000'"
+                    :class="{ 'selected-club': selectedClub === club }"
+                    @click="selectedClub = club"
+                >
+                    {{ club }}
+                </v-btn>
+            </v-slide-item>
+        </v-slide-group>
+
     </v-container>
 </template>
 
@@ -13,7 +26,7 @@ import { computed, ref, watch } from 'vue'
 
 const props = defineProps(['clubs'])
 const emit = defineEmits(['select-club'])
-const selectedClub = ref('')
+const selectedClub = ref()
 
 // Create computed array with only club names
 const clubNames = computed(() => {
@@ -22,11 +35,11 @@ const clubNames = computed(() => {
 
 // Watch for changes in selectedClub and emit to parent
 watch(selectedClub, (newValue) => {
-  if (newValue) {
-    // Find the full club object to send back
-    const selectedClubObj = props.clubs?.find((club: any) => club.name === newValue)
-    emit('select-club', selectedClubObj)
+  let selectedClubObj = props.clubs?.find((club: any) => club.name === newValue)
+  if (selectedClubObj === undefined) {
+    selectedClubObj = { id: -1, name: newValue } 
   }
+  emit('select-club', selectedClubObj)
 })
 
 </script>
