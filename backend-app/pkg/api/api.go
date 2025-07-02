@@ -486,23 +486,35 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	})
 
 	private.POST("/api/club/event", func(ctx *gin.Context) {
-		var foo db.Event
+		var data struct {
+			Name   string `json:"name"`
+			ClubID uint   `json:"club_id"`
+		}
 
-		if err := ctx.ShouldBindJSON(&foo); err != nil {
+		var res struct {
+			ID     uint   `json:"id"`
+			Name   string `json:"name"`
+			ClubID uint   `json:"club_id"`
+		}
+
+		if err := ctx.ShouldBindJSON(&data); err != nil {
 			ctx.JSON(400, gin.H{"error": "Bad Request"})
 			log.Printf("Error binding JSON: %v", err)
 			return
 		}
 
-		club, found := db.GetClub(connection, foo.ClubID)
+		club, found := db.GetClub(connection, data.ClubID)
 
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Club not found"})
 			return
 		}
 
-		event := db.CreateEvent(connection, foo.Name, club.ID)
-		ctx.JSON(201, event)
+		event := db.CreateEvent(connection, data.Name, club.ID)
+		res.ClubID = event.ClubID
+		res.ID = event.ID
+		res.Name = event.Name
+		ctx.JSON(201, res)
 	})
 
 	private.POST("/api/talent", func(ctx *gin.Context) {
@@ -866,7 +878,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	private.DELETE("/api/event", func(ctx *gin.Context) {
 
 		var data struct {
-			ID uint `json:"id"`
+			EventID uint `json:"event_id"`
 		}
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
@@ -875,21 +887,21 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			return
 		}
 
-		event, found := db.GetEvent(connection, data.ID)
+		event, found := db.GetEvent(connection, data.EventID)
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Event not found"})
 			return
 		}
 
 		user := db.GetUserByDiscordID(connection, ctx.MustGet("discordID").(string))
-		authorized := db.CheckUserIsOwnerOfClub(connection, event.ClubID, user.ID)
+		authorized := db.CheckUserIsOwnerOfClub(connection, user.ID, event.ClubID)
 
 		if !authorized {
 			ctx.JSON(403, gin.H{"error": "Forbidden"})
 			return
 		}
 
-		db.DeleteEvent(connection, data.ID)
+		db.DeleteEvent(connection, data.EventID)
 
 		ctx.JSON(200, gin.H{"message": "Event deleted"})
 	})
