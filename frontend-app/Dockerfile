@@ -4,10 +4,10 @@ FROM node:lts-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm i
 
 # Copy source code
 COPY . .
