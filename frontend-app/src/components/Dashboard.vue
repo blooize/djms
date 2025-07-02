@@ -1,7 +1,7 @@
 <template>
   <v-container class="p-4">
-    <v-row align="center">
-      <v-col cols="" class="d-flex align-start">
+    <v-row no-gutters>
+      <v-col cols="" class="d-flex">
         <div class="d-flex align-center">
           <v-img
             class="mr-4"
@@ -23,16 +23,15 @@
         </div>
       </v-col>
 
-      <v-col cols="5" class="d-flex justify-center">
-        <club-selection :clubs="clubs" @select-club="($event) => {
-          selectedClub = $event
-        }" />
-        <club-create-dialog @new-club="createClub($event)"/>
+      <v-col cols="5" class="d-flex justify-end">
+        <club-selection :clubs="clubs" @select-club="selectedClub = $event"/>
+        <club-create-dialog class="d-flex align-center mb-4" @new-club="createClub($event)"/>
       </v-col>
     </v-row>
-    <v-row>
-      <v-col cols="3" v-if="selectedClub" class="d-flex justify-center">
+    <v-row no-gutters class="d-flex justify-end">
+      <v-col cols="5" v-if="selectedClub" class="d-flex">
         <event-selection :events="events" @select-event="selectedEvent = $event" />
+        <event-create-dialog class="d-flex align-center mb-6" @new-event="createEvent($event)" />
       </v-col>
     </v-row>
   </v-container>
@@ -46,7 +45,7 @@ let selectedClub = ref<{ id: number, name: string } | null>(null)
 let selectedEvent = ref<string>()
 
 let clubs = ref([{ id: 0, name: '' }])
-let events = ref<Array<{ id: number, name: string }>>()
+let events = ref<{ id: number, name: string }[]>([])
 
 const props = defineProps([
     'DiscordID',
@@ -84,8 +83,9 @@ const fetchEvents = async () => {
       club_id: selectedClub.value?.id
     }
   })
-
-  events.value = response.data.events
+  
+  events.value = response.data.events || []
+  console.log('Fetched events:', events.value)
 }
 
 const createClub = async (name: string) => {
@@ -103,11 +103,28 @@ const createClub = async (name: string) => {
   clubs.value.push(newClub)
 }
 
+const createEvent = async (name: string) => {
+  const jwtToken = localStorage.getItem('jwt')
+  const response = await axios.post('http://localhost:4000/api/club/event', {
+    name: name,
+    club_id: selectedClub.value?.id
+  }, {
+    headers: {
+      'Authorization': `Bearer ${jwtToken || ''}`
+    }
+  })
+  let newEvent = { id: response.data.id, name: response.data.name}
+  console.log('New event created:', newEvent)
+  events.value.push(newEvent)
+}
+
 watch(selectedClub, (newValue) => {
   fetchEvents()
 })
 
-
+watch(selectedEvent, (newValue) => {
+  console.log('Selected event changed:', newValue)
+})
 
 onMounted(() => {
   fetchClubs()

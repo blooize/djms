@@ -3,7 +3,6 @@
         <v-btn
             size="default"
             color="primary"
-            class=""
             @click="dialog = true"
         >New Event</v-btn>
 

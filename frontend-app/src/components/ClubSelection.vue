@@ -1,5 +1,5 @@
 <template>
-    <v-container class="">
+    <v-container>
         <v-slide-group
             show-arrows
         >
