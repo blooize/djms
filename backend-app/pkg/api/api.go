@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"main/pkg/db"
+	"os"
 	"strconv"
 
 	"github.com/gin-contrib/cors"
@@ -27,7 +28,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowCredentials: true,
-		AllowOrigins:     []string{"http://localhost:3000", "http://djms.praxis.club"},
+		AllowOrigins:     []string{"http://localhost:3001", "http://djms.praxis.club"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Cookie"},
 	}))
@@ -111,7 +112,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		ctx.SetCookie("jwt", s, 600000, "/", "localhost", false, false)
-		ctx.Redirect(302, "http://localhost:3000/")
+		ctx.Redirect(302, os.Getenv("FRONTEND_URL"))
 		// theres more to do here with authentication/authorization but i want to do less annoying stuff now
 	})
 

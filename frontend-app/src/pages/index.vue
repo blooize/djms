@@ -13,7 +13,6 @@
 import { onMounted, ref } from 'vue'
 import axios from 'axios'
 
-
 let isLoggedIn = ref(false)
 let discordID = ref('')
 let username = ref('')

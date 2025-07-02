@@ -5,7 +5,7 @@ FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY go.mod go.sum .env.dev ./
 
 # Download dependencies
 RUN go mod download

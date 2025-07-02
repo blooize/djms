@@ -25,6 +25,12 @@
 </template>
 
 <script setup lang="ts">
+import { trackUmamiEvent } from '@jaseeey/vue-umami-plugin';
+
+trackUmamiEvent('login-button-clicked', {
+  category: 'user-interaction',
+  label: 'login-page'
+});
 const redirectToDiscord = () => {
   window.location.href = 'http://localhost:4000/auth/discord/login';
 }
