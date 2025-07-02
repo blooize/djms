@@ -19,6 +19,7 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - SECRET_TOKEN=${SECRET_TOKEN}
+      - FRONTEND_URL=${FRONTEND_URL}
     volumes:
       - ./backend-app:/app
       - ./backend-app/djms.db:/app/djms.db
