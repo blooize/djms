@@ -83,7 +83,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
 			return
 		}
-		// ctx.Data(200, "application/json", body)
 
 		var userData map[string]any
 
@@ -113,7 +112,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 		ctx.SetCookie("jwt", s, 600000, "/", "localhost", false, false)
 		ctx.Redirect(302, os.Getenv("FRONTEND_URL"))
-		// theres more to do here with authentication/authorization but i want to do less annoying stuff now
 	})
 
 	private.GET("/api/clubs", func(ctx *gin.Context) {
@@ -130,7 +128,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		user_id := ctx.MustGet("discordID").(string)
 		userID := db.GetUserByDiscordID(connection, user_id)
 
-		clubs, err := db.GetClubsOwnedByUserID(connection, strconv.Itoa(int(userID.ID))) //i believe .MustGet essentially forces authorization
+		clubs, err := db.GetClubsOwnedByUserID(connection, strconv.Itoa(int(userID.ID)))
 		if err != nil {
 			ctx.JSON(500, gin.H{"error": "Internal Server Error"})
 			return
