@@ -3,7 +3,7 @@
         <v-slide-group
             show-arrows
         >
-            <v-slide-item
+            <v-slide-group-item
                 v-for="club in clubNames"
                 :key="club"
                 class="d-flex align-center justify-center"
@@ -15,7 +15,7 @@
                 >
                     {{ club }}
                 </v-btn>
-            </v-slide-item>
+            </v-slide-group-item>
         </v-slide-group>
 
     </v-container>

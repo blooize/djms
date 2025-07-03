@@ -12,6 +12,7 @@ declare module 'vue' {
     ClubSelection: typeof import('./components/ClubSelection.vue')['default']
     Dashboard: typeof import('./components/Dashboard.vue')['default']
     EventCreateDialog: typeof import('./components/EventCreateDialog.vue')['default']
+    EventDash: typeof import('./components/EventDash.vue')['default']
     EventSelection: typeof import('./components/EventSelection.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

@@ -34,18 +34,31 @@
         <event-create-dialog class="d-flex align-center mb-6" @new-event="createEvent($event)" />
       </v-col>
     </v-row>
+    <v-row no-gutters>
+      <v-col cols="12">
+        <event-dash
+          v-if="selectedEvent"
+          :DiscordID="props.DiscordID"
+          :Username="props.Username"
+          :EventID="selectedEvent.id"
+          :EventName="selectedEvent.name"
+          :ClubID="selectedClub?.id as number"
+          />
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script lang="ts" setup>
 import { defineProps, onMounted, ref, watch, computed } from 'vue'
+import type { Club, Event } from '@/types'
 import axios from 'axios'
 
-let selectedClub = ref<{ id: number, name: string } | null>(null)
-let selectedEvent = ref<string>()
+let selectedClub = ref<Club | undefined>()
+let selectedEvent = ref<Event | undefined>()
 
-let clubs = ref([{ id: 0, name: '' }])
-let events = ref<{ id: number, name: string }[]>([])
+let clubs = ref<Array<Club>>([])
+let events = ref<Array<Event>>([])
 
 const props = defineProps([
     'DiscordID',
@@ -83,7 +96,7 @@ const fetchEvents = async () => {
       club_id: selectedClub.value?.id
     }
   })
-  
+
   events.value = response.data.events || []
   console.log('Fetched events:', events.value)
 }
@@ -113,12 +126,12 @@ const createEvent = async (name: string) => {
       'Authorization': `Bearer ${jwtToken || ''}`
     }
   })
-  let newEvent = { id: response.data.id, name: response.data.name}
+  let newEvent = { id: response.data.id, name: response.data.name, club_id: response.data.club_id }
   console.log('New event created:', newEvent)
   events.value.push(newEvent)
 }
 
-watch(selectedClub, (newValue) => {
+watch(selectedClub, () => {
   fetchEvents()
 })
 
