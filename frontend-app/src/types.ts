@@ -5,8 +5,8 @@ export interface Event {
 }
 
 export interface DancerSlots {
-    event_id: number;
     club_id: number;
+    event_id: number;
     dancerslots: Array<DancerSlot>;
 }
 
