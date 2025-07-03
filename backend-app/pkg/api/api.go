@@ -170,10 +170,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, res)
 	})
 
-	private.GET("/api/djslots", func(ctx *gin.Context) {
-		var data struct {
-			EventID uint `json:"event_id"`
-		}
+	private.GET("/api/event/talentslots", func(ctx *gin.Context) {
 
 		type Talent struct {
 			ID   uint   `json:"id"`
@@ -187,26 +184,23 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		var res struct {
 			EventID uint         `json:"event_id"`
 			ClubID  uint         `json:"club_id"`
-			Slots   []TalentSlot `json:"slots"`
+			Slots   []TalentSlot `json:"talent_slots"`
 		}
 
-		if err := ctx.ShouldBindJSON(&data); err != nil {
-			ctx.JSON(400, gin.H{"error": "Bad Request"})
-			log.Printf("Error binding JSON: %v", err)
+		eventID, err := strconv.Atoi(ctx.Query("event_id"))
+		if err != nil {
+			ctx.JSON(400, gin.H{"error": "Invalid event ID"})
 			return
 		}
 
-		event, found := db.GetEvent(connection, data.EventID)
+		event, found := db.GetEvent(connection, uint(eventID))
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Event not found"})
 			return
 		}
 
 		slots := db.GetSlotsByEventID(connection, event.ID)
-		if len(slots) == 0 {
-			ctx.JSON(404, gin.H{"error": "No slots found for this event"})
-			return
-		}
+
 		var talentSlot []TalentSlot
 
 		for _, slot := range slots {
@@ -236,10 +230,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	// this fucking sucks and would be better if i just used a join but im too dumb for that right now
 	private.GET("/api/event/dancerslots", func(ctx *gin.Context) {
-		var data struct {
-			EventID uint `json:"event_id"`
-		}
-
 		type Dancer struct {
 			ID   uint   `json:"id"`
 			Name string `json:"name"`
@@ -251,22 +241,24 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		var res struct {
-			ClubID      uint    `json:"club_id"`
 			EventID     uint    `json:"event_id"`
+			ClubID      uint    `json:"club_id"`
 			DancerSlots []Slots `json:"dancer_slots"`
 		}
 
-		if err := ctx.ShouldBindJSON(&data); err != nil {
-			ctx.JSON(400, gin.H{"error": "Bad Request"})
-			log.Printf("Error binding JSON: %v", err)
+		eventID, err := strconv.Atoi(ctx.Query("event_id"))
+		if err != nil {
+			ctx.JSON(400, gin.H{"error": "Invalid event ID"})
 			return
 		}
-		event, found := db.GetEvent(connection, data.EventID)
+
+		event, found := db.GetEvent(connection, uint(eventID))
 		if !found {
 			ctx.JSON(404, gin.H{"error": "Event not found"})
 			return
 		}
-		dancerslots := db.GetDancerSlots(connection, data.EventID)
+
+		dancerslots := db.GetDancerSlots(connection, event.ID)
 
 		for _, slot := range dancerslots {
 			slottalents := db.GetDancerSlotTalents(connection, slot.ID)
@@ -299,11 +291,9 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		}
 
 		var res struct {
-			ID          uint            `json:"id"`
-			Name        string          `json:"name"`
-			ClubID      uint            `json:"club_id"`
-			TalentSlots []db.Slot       `json:"talent_slots"`
-			DancerSlots []db.DancerSlot `json:"dancer_slots"`
+			ID     uint   `json:"id"`
+			Name   string `json:"name"`
+			ClubID uint   `json:"club_id"`
 		}
 
 		if err := ctx.ShouldBindJSON(&data); err != nil {
@@ -320,9 +310,6 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		res.ID = event.ID
 		res.Name = event.Name
 		res.ClubID = event.ClubID
-
-		res.TalentSlots = db.GetSlotsByEventID(connection, event.ID)
-		res.DancerSlots = db.GetDancerSlots(connection, event.ID)
 		ctx.JSON(200, res)
 	})
 
@@ -538,7 +525,7 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 
 	})
 
-	private.POST("/api/event/slot", func(ctx *gin.Context) {
+	private.POST("/api/event/talentslot", func(ctx *gin.Context) {
 		var data struct {
 			EventID    uint     `json:"event_id"`
 			Date       uint64   `json:"date"`
