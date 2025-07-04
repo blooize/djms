@@ -92,14 +92,12 @@ const fetchSlots = async () => {
     },
   );
 
-  // dslots = { 
-  //   dancerslots: responseDancerSlots.data.dancer_slots as Array<DancerSlot> || [], 
-  //   event_id: props.EventID as number, 
-  //   club_id: props.ClubID as number 
-  // } as DancerSlots;
+  dslots.value = { 
+    dancerslots: responseDancerSlots.data.dancer_slots as Array<DancerSlot> || [], 
+    event_id: props.EventID as number, 
+    club_id: props.ClubID as number 
+  } as DancerSlots;
 
-  console.log("Talent Slots:", tslots);
-  console.log("Dancer Slots:", dslots);
 };
 
 onMounted(() => {

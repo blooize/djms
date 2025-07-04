@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, onMounted, ref } from 'vue'
+import { defineProps, ref } from 'vue'
 import type { TalentSlot } from '@/types'
 const props = defineProps<{
   AllTalentNames: Array<string>;
@@ -19,9 +19,5 @@ const props = defineProps<{
 }>();
 
 const selectedTalent = ref<string[]>([]);
-
-onMounted(() => {
-  console.log('TalentSlotTable mounted with Slot:', props.Slot);
-});
 
 </script>

@@ -36,7 +36,6 @@ const checkUserAuth = async () => {
         'Authorization': `Bearer ${jwtToken || ''}`
       },
     })
-    console.log('User authenticated:', response.data)
     discordID.value = response.data.user_id
     username.value = response.data.username
     const url = response.data.avatar
@@ -45,7 +44,7 @@ const checkUserAuth = async () => {
     avatarURL.value = url
     isLoggedIn.value = true
   } catch (error) {
-    console.log('User not authenticated:', error)
+    console.info('User not authenticated:', error)
   }
 }
 

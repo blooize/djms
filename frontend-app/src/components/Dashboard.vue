@@ -35,13 +35,12 @@
         <event-selection :events="events" @select-event="selectedEvent = $event" />
         <event-create-dialog class="d-flex align-center mb-6" @new-event="createEvent($event)" />
       </v-col>
-    <v-divider ></v-divider>
+    <v-divider class="mt-3" color="primary" :thickness="3" />
     </v-row>
-    <v-row no-gutters>
+    <v-row no-gutters v-if="selectedEvent && selectedClub">
       <v-col cols="5">
         <h1>Talent Slots</h1>
         <event-dash
-          v-if="selectedEvent"
           :DiscordID="props.DiscordID"
           :Username="props.Username"
           :EventID="selectedEvent.id"
@@ -103,7 +102,6 @@ const fetchEvents = async () => {
   })
 
   events.value = response.data.events || []
-  console.log('Fetched events:', events.value)
 }
 
 const createClub = async (name: string) => {
@@ -117,7 +115,6 @@ const createClub = async (name: string) => {
   })
 
   let newClub = { id: response.data.id, name: response.data.name }
-  console.log('New club created:', newClub)
   clubs.value.push(newClub)
 }
 
@@ -132,7 +129,6 @@ const createEvent = async (name: string) => {
     }
   })
   let newEvent = { id: response.data.id, name: response.data.name, club_id: response.data.club_id }
-  console.log('New event created:', newEvent)
   events.value.push(newEvent)
 }
 
