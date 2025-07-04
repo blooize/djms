@@ -7,11 +7,11 @@
             class="mr-4"
             height="80"
             rounded="circle"
-            :src="AvatarURL"
+            :src="props.avatarURL"
             width="80"
           />
           <div>
-            <p class="text-h4 font-weight-bold">{{ Username }}</p>
+            <p class="text-h4 font-weight-bold">{{ props.username }}</p>
             <v-btn
               prepend-icon="mdi-account-circle"
               size="large"
@@ -46,10 +46,10 @@
         <event-dash
           class="mt-4"
           :club-i-d="selectedClub.id"
-          :discord-i-d="props.DiscordID"
+          :discord-i-d="props.discordID"
           :event-i-d="selectedEvent.id"
           :event-name="selectedEvent.name"
-          :username="props.Username"
+          :username="props.username"
         />
       </v-col>
     </v-row>
@@ -67,14 +67,14 @@
   const clubs = ref<Array<Club>>([])
   const events = ref<Array<Event>>([])
 
-  const props = defineProps([
-    'DiscordID',
-    'Username',
-    'AvatarURL',
-  ])
+  const props = defineProps<{
+    discordID: string
+    username: string
+    avatarURL: string
+  }>()
 
   const logout = () => {
-    console.log('Logging out user:', props.Username)
+    console.log('Logging out user:', props.username)
     localStorage.removeItem('jwt')
     window.location.reload()
   }
