@@ -346,6 +346,48 @@ func SetupRouter(client_id string, client_secret string, redirect_uri string, jw
 		ctx.JSON(200, res)
 	})
 
+	private.GET("/api/dancers", func(ctx *gin.Context) {
+		type Dancer struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
+
+		var res struct {
+			Dancers []Dancer `json:"dancers"`
+		}
+
+		dancers := db.GetAllDancers(connection)
+		for _, dancer := range dancers {
+			res.Dancers = append(res.Dancers, Dancer{
+				ID:   dancer.ID,
+				Name: dancer.Name,
+			})
+		}
+
+		ctx.JSON(200, res)
+	})
+
+	private.GET("/api/talents", func(ctx *gin.Context) {
+		type Talent struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		}
+
+		var res struct {
+			Talents []Talent `json:"talents"`
+		}
+
+		talents := db.GetAllTalents(connection)
+		for _, talent := range talents {
+			res.Talents = append(res.Talents, Talent{
+				ID:   talent.ID,
+				Name: talent.Name,
+			})
+		}
+
+		ctx.JSON(200, res)
+	})
+
 	private.POST("/api/club", func(ctx *gin.Context) {
 		var data struct {
 			Name string `json:"name"`

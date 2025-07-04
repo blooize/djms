@@ -328,6 +328,18 @@ func GetDancer(db *gorm.DB, id uint) (Dancer, bool) {
 	}
 }
 
+func GetAllDancers(db *gorm.DB) []Dancer {
+	var dancers []Dancer
+	db.Find(&dancers)
+	return dancers
+}
+
+func GetAllTalents(db *gorm.DB) []Talent {
+	var talents []Talent
+	db.Find(&talents)
+	return talents
+}
+
 func GetDancerByName(db *gorm.DB, name string) (Dancer, bool) {
 	var dancer Dancer
 	db.First(&dancer, "name = ?", name)
