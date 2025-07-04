@@ -12,12 +12,12 @@
       </div>
       <v-card class="text-center">
         <v-btn
-        size="large"
-        prepend-icon="mdi-account-circle"
-        @click="redirectToDiscord"
+          prepend-icon="mdi-account-circle"
+          size="large"
+          @click="redirectToDiscord"
         >
-        Login
-      </v-btn>
+          Login
+        </v-btn>
       </v-card>
 
     </div>
@@ -25,13 +25,13 @@
 </template>
 
 <script setup lang="ts">
-import { trackUmamiEvent } from '@jaseeey/vue-umami-plugin';
+  import { trackUmamiEvent } from '@jaseeey/vue-umami-plugin'
 
-trackUmamiEvent('login-button-clicked', {
-  category: 'user-interaction',
-  label: 'login-page'
-});
-const redirectToDiscord = () => {
-  window.location.href = 'http://localhost:4000/auth/discord/login';
-}
+  trackUmamiEvent('login-button-clicked', {
+    category: 'user-interaction',
+    label: 'login-page',
+  })
+  const redirectToDiscord = () => {
+    window.location.href = 'http://localhost:4000/auth/discord/login'
+  }
 </script>

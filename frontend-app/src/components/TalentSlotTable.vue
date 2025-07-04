@@ -1,23 +1,27 @@
 <template>
   <v-combobox
     v-model="selectedTalent"
-    :items="AllTalentNames"
-    :label="(Slot.date ? new Date(Slot.date*1000).toLocaleString() : '')"
-    clearable
     chips
+    clearable
+    :items="allTalentNames"
+    :label="(talentSlot.date ? new Date(talentSlot.date*1000).toLocaleString() : '')"
     multiple
     variant="outlined"
-  ></v-combobox>
+  />
 </template>
 
 <script lang="ts" setup>
-import { defineProps, ref } from 'vue'
-import type { TalentSlot } from '@/types'
-const props = defineProps<{
-  AllTalentNames: Array<string>;
-  Slot: TalentSlot;
-}>();
+  import type { TalentSlot } from '@/types'
+  import { defineProps, onMounted, ref } from 'vue'
+  const props = defineProps<{
+    allTalentNames: Array<string>
+    talentSlot: TalentSlot
+  }>()
 
-const selectedTalent = ref<string[]>([]);
+  const selectedTalent = ref<string[]>([])
+
+  onMounted(() => {
+    console.log(props.talentSlot.date + '\n' + props.allTalentNames)
+  })
 
 </script>

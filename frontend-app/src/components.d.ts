@@ -10,7 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     ClubCreateDialog: typeof import('./components/ClubCreateDialog.vue')['default']
     ClubSelection: typeof import('./components/ClubSelection.vue')['default']
-    DancerSlotTable: typeof import('./components/DancerSlotTable.vue')['default']
+    DancerSlotTable: typeof import('./components/TalentSlotTable.vue')['default']
     Dashboard: typeof import('./components/Dashboard.vue')['default']
     EventCreateDialog: typeof import('./components/EventCreateDialog.vue')['default']
     EventDash: typeof import('./components/EventDash.vue')['default']
