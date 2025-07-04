@@ -11,7 +11,7 @@ export interface DancerSlots {
 }
 
 export interface DancerSlot {
-    data: number;
+    date: number;
     dancers : Array<Dancer>;
 }
 
@@ -27,7 +27,7 @@ export interface TalentSlots {
 }
 
 export interface TalentSlot {
-    data: number;
+    date: number;
     talents: Array<Talent>;
 }
 

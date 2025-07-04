@@ -24,7 +24,9 @@
       </v-col>
 
       <v-col cols="5" class="d-flex justify-end">
-        <club-selection :clubs="clubs" @select-club="selectedClub = $event"/>
+        <club-selection :clubs="clubs" @select-club="($event) => {
+          selectedClub = $event
+        }"/>
         <club-create-dialog class="d-flex align-center mb-4" @new-club="createClub($event)"/>
       </v-col>
     </v-row>
@@ -33,16 +35,19 @@
         <event-selection :events="events" @select-event="selectedEvent = $event" />
         <event-create-dialog class="d-flex align-center mb-6" @new-event="createEvent($event)" />
       </v-col>
+    <v-divider ></v-divider>
     </v-row>
     <v-row no-gutters>
-      <v-col cols="12">
+      <v-col cols="5">
+        <h1>Talent Slots</h1>
         <event-dash
           v-if="selectedEvent"
           :DiscordID="props.DiscordID"
           :Username="props.Username"
           :EventID="selectedEvent.id"
           :EventName="selectedEvent.name"
-          :ClubID="selectedClub?.id as number"
+          :ClubID="selectedClub.id"
+          class="mt-4"
           />
       </v-col>
     </v-row>
@@ -54,8 +59,8 @@ import { defineProps, onMounted, ref, watch, computed } from 'vue'
 import type { Club, Event } from '@/types'
 import axios from 'axios'
 
-let selectedClub = ref<Club | undefined>()
-let selectedEvent = ref<Event | undefined>()
+let selectedClub = ref<Club>()
+let selectedEvent = ref<Event>()
 
 let clubs = ref<Array<Club>>([])
 let events = ref<Array<Event>>([])
@@ -133,10 +138,6 @@ const createEvent = async (name: string) => {
 
 watch(selectedClub, () => {
   fetchEvents()
-})
-
-watch(selectedEvent, (newValue) => {
-  console.log('Selected event changed:', newValue)
 })
 
 onMounted(() => {
