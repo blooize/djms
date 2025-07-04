@@ -57,7 +57,7 @@ let dialog = ref(false)
 let eventName = ref<string>()
 
 const validateInput = () => {
-    if(eventName.value && eventName.value !== '') {
+    if(eventName.value && eventName.value.trim() !== '') {
         validInput.value = true
     } else {
         validInput.value = false

@@ -56,7 +56,7 @@ let dialog = ref(false)
 let clubName = ref<string>()
 
 const validateInput = () => {
-    if(clubName.value && clubName.value !== '') {
+    if(clubName.value && clubName.value.trim() !== '') {
         validInput.value = true
     } else {
         validInput.value = false
